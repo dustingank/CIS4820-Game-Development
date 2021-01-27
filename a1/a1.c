@@ -15,7 +15,8 @@
 #include "graphics.h"
 
 extern GLubyte  world[WORLDX][WORLDY][WORLDZ];
-int test[8];
+int horizontalCorridor[3][8];
+int verticalCorridor[3][8];
 
 	/* mouse function called by GLUT when a button is pressed or released */
 void mouse(int, int, int, int);
@@ -102,6 +103,8 @@ int randomNumer(int, int);
 void generateRoom(int, int, int, int, int);
 void gravity();
 void buildCorridor();
+void buildHorizontalCorridorWall(int, int, int, int);
+void buildVerticalCorridorWall(int, int, int, int);
 /********************************/
 
 
@@ -442,11 +445,14 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
             world[endX][25][centerDoorRight + i] = 0;
             world[endX][26][centerDoorRight + i] = 0;
          }
-         test[0] = endX;
-         test[1] = centerDoorRight;
+         horizontalCorridor[0][0] = endX;
+         horizontalCorridor[0][1] = centerDoorRight;
+
+         verticalCorridor[0][0] = centerDoorBottom;
+         verticalCorridor[0][1] = endZ;
          break;
 
-      case 2:;
+      case 2:
          centerDoorBottom = randomNumer(startX + 3, endX - 3);
          centerDoorRight = randomNumer(startZ + 3, endZ - 3);
          centerDoorLeft = randomNumer(startZ + 3, endZ - 3);
@@ -463,10 +469,13 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
             world[startX][25][centerDoorLeft + i] = 0;
             world[startX][26][centerDoorLeft + i] = 0;
          }
-         test[2] = startX;
-         test[3] = centerDoorLeft;
-         test[4] = startZ;
-         test[5] = centerDoorRight;
+         horizontalCorridor[0][2] = startX;
+         horizontalCorridor[0][3] = centerDoorLeft;
+         horizontalCorridor[0][4] = endX;
+         horizontalCorridor[0][5] = centerDoorRight;
+
+         verticalCorridor[1][0] = centerDoorBottom;
+         verticalCorridor[1][1] = endZ;
 
          break;
       case 3:
@@ -481,8 +490,11 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
             world[startX][25][centerDoorLeft + i] = 0;
             world[startX][26][centerDoorLeft + i] = 0;
          }
-         test[6] = startX;
-         test[7] = centerDoorLeft;
+         horizontalCorridor[0][6] = startX;
+         horizontalCorridor[0][7] = centerDoorLeft;
+
+         verticalCorridor[2][0] = centerDoorBottom;
+         verticalCorridor[2][1] = endZ;
 
          break;
       case 4:
@@ -502,6 +514,13 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
             world[centerDoorTop + i][25][startZ] = 0;
             world[centerDoorTop + i][26][startZ] = 0;
          }
+         horizontalCorridor[1][0] = endX;
+         horizontalCorridor[1][1] = centerDoorRight;
+
+         verticalCorridor[0][2] = centerDoorTop;
+         verticalCorridor[0][3] = startZ;
+         verticalCorridor[0][4] = centerDoorBottom;
+         verticalCorridor[0][5] = endZ;
          break;
       case 5:
          centerDoorBottom = randomNumer(startX + 3, endX - 3);
@@ -526,6 +545,16 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
             world[centerDoorTop + i][25][startZ] = 0;
             world[centerDoorTop + i][26][startZ] = 0;
          }
+
+         horizontalCorridor[1][2] = startX;
+         horizontalCorridor[1][3] = centerDoorLeft;
+         horizontalCorridor[1][4] = endX;
+         horizontalCorridor[1][5] = centerDoorRight;
+
+         verticalCorridor[1][2] = centerDoorTop;
+         verticalCorridor[1][3] = startZ;
+         verticalCorridor[1][4] = centerDoorBottom;
+         verticalCorridor[1][5] = endZ;
          break;
       case 6:
          centerDoorTop = randomNumer(startX + 3, endX - 3);
@@ -545,6 +574,13 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
             world[centerDoorTop + i][25][startZ] = 0;
             world[centerDoorTop + i][26][startZ] = 0;
          }
+         horizontalCorridor[1][6] = startX;
+         horizontalCorridor[1][7] = centerDoorLeft;
+
+         verticalCorridor[2][2] = centerDoorTop;
+         verticalCorridor[2][3] = startZ;
+         verticalCorridor[2][4] = centerDoorBottom;
+         verticalCorridor[2][5] = endZ;
          break;
       case 7:
          centerDoorRight = randomNumer(startZ + 3, endZ - 3);
@@ -559,6 +595,11 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
             world[centerDoorTop + i][25][startZ] = 0;
             world[centerDoorTop + i][26][startZ] = 0;
          }
+         horizontalCorridor[2][0] = endX;
+         horizontalCorridor[2][1] = centerDoorRight;
+
+         verticalCorridor[0][6] = centerDoorTop;
+         verticalCorridor[0][7] = startZ;
          break;
       case 8:
          centerDoorRight = randomNumer(startZ + 3, endZ - 3);
@@ -578,6 +619,13 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
             world[centerDoorTop + i][25][startZ] = 0;
             world[centerDoorTop + i][26][startZ] = 0;
          }
+         horizontalCorridor[2][2] = startX;
+         horizontalCorridor[2][3] = centerDoorLeft;
+         horizontalCorridor[2][4] = endX;
+         horizontalCorridor[2][5] = centerDoorRight;
+
+         verticalCorridor[1][6] = centerDoorTop;
+         verticalCorridor[1][7] = startZ;
          break;
       case 9:
          centerDoorTop = randomNumer(startX + 3, endX - 3);
@@ -591,6 +639,11 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
             world[centerDoorTop + i][25][startZ] = 0;
             world[centerDoorTop + i][26][startZ] = 0;
          }
+         horizontalCorridor[2][6] = startX;
+         horizontalCorridor[2][7] = centerDoorLeft;
+
+         verticalCorridor[2][6] = centerDoorTop;
+         verticalCorridor[2][7] = startZ;
          break;
       default:
          printf("Error at room generate function: unknown room location %d\n", location);
@@ -618,102 +671,101 @@ void gravity() {
 }
 
 void buildCorridor() {
-   int leftX = test[0];
-   int leftY = test[1];
-   int centerXLeft = test[2];
-   int centerYLeft = test[3];
+   //printf("should be: %d %d %d %d %d %d %d %d\n", test[0],test[1],test[2],test[3],test[4],test[5],test[6],test[7]);
+   for (int i = 0; i < 3; i++) {
+      for (int j = 0; j<= 1; j++) {
+         buildHorizontalCorridorWall(horizontalCorridor[i][0 + j * 4], horizontalCorridor[i][1 + j * 4], 
+               horizontalCorridor[i][2 + j * 4], horizontalCorridor[i][3 + j * 4]);
 
-   int centerXRight = test[4];
-   int centerYRight = test[5];
-   int rightX = test[6];
-   int rightY = test[7];
-
-   for (int i = 1; i <= 2; i++) {
-      buildCorridorWall(test[1 * i - 1], test[2 * i - 1], test[3 * i - 1], test[4 * i - 1]);
+         buildVerticalCorridorWall(verticalCorridor[i][0 + j * 4], verticalCorridor[i][1 + j * 4], 
+               verticalCorridor[i][2 + j * 4], verticalCorridor[i][3 + j * 4]);
+      }
    }
+}
 
-
-
+void buildHorizontalCorridorWall(int leftX, int leftY, int rightX, int rightY) {
    int remainder = 0;
    int currentLeft = 0;
    int currentRight = 0;
+   //printf("%d %d %d %d\n", leftX, leftY, rightX, rightY);
+   int horizontalDistance = abs(leftX - rightX); // horizontal distance between two wall
+   int verticalDistance = abs(leftY - rightY); // vertical distance betweeen two wall
 
-   int horizontalDistance = abs(centerXLeft - leftX);
-   int verticalDistance = abs(centerYLeft - leftY);
-
-   //printf("%d %d\n", leftToCenterX, leftToCenterY);
-
-
+   // build the wall at horizontal vertex
    for (int i = 0; i < horizontalDistance / 2; i++) {
-
       world[leftX + i][25][leftY + 1] = 2;
       world[leftX + i][26][leftY + 1] = 2;
+
       world[leftX + i][25][leftY - 1] = 2;
       world[leftX + i][26][leftY - 1] = 2;
 
-      world[centerXLeft - i][25][centerYLeft + 1] = 2;
-      world[centerXLeft - i][26][centerYLeft + 1] = 2;
-      world[centerXLeft - i][25][centerYLeft - 1] = 2;
-      world[centerXLeft - i][26][centerYLeft - 1] = 2;
-         
+      world[rightX - i][25][rightY + 1] = 2;
+      world[rightX - i][26][rightY + 1] = 2;
+
+      world[rightX - i][25][rightY - 1] = 2;
+      world[rightX - i][26][rightY - 1] = 2;
+
       currentLeft = leftX + i;
-      currentRight = centerXLeft - i;
+      currentRight = rightX - i;
    }
    remainder = horizontalDistance % 2;
 
+   // if the haorizontal distance if not events
    if (remainder != 0) {
       leftX = currentLeft;
-      for (int j = 1; j < remainder; j++) {
 
-         world[leftX + j][25][leftY + 1] = 2;
-         world[leftX + j][26][leftY + 1] = 2;
-         world[leftX + j][25][leftY - 1] = 2;
-         world[leftX + j][26][leftY - 1] = 2;
+      for (int i = 1; i < remainder; i++) {
+         world[leftX + i][25][leftY + 1] = 2;
+         world[leftX + i][26][leftY + 1] = 2;
+
+         world[leftX + i][25][leftY - 1] = 2;
+         world[leftX + i][26][leftY - 1] = 2;
          
-         currentLeft = leftX + j;
+         currentLeft = leftX + i;
       }
    }
-  
-   if (verticalDistance != 0) {
-      if (leftY < centerYLeft) {
-         world[currentRight - 1][25][centerYLeft + 1] = 2;
-         world[currentRight - 1][26][centerYLeft + 1] = 2;
-         world[currentRight - 2][25][centerYLeft + 1] = 2;
-         world[currentRight - 2][26][centerYLeft + 1] = 2;
 
+   // building the wall at vertical vertax
+   if (verticalDistance != 0) {
+      if (leftY < rightY) {
+         // extend 2 unit for the most upper wall
+         world[currentRight - 1][25][rightY + 1] = 2;
+         world[currentRight - 1][26][rightY + 1] = 2;
+         world[currentRight - 2][25][rightY + 1] = 2;
+         world[currentRight - 2][26][rightY + 1] = 2;
+
+         // extend 2 unit for the most bottom wall
          world[currentLeft + 1][25][leftY - 1] = 2;
          world[currentLeft + 1][26][leftY - 1] = 2;
          world[currentLeft + 2][25][leftY - 1] = 2;
          world[currentLeft + 2][26][leftY - 1] = 2;
 
          for (int j = 1; j <= verticalDistance; j++) {
+            world[currentRight - 2][25][rightY + 1 - j] = 2;
+            world[currentRight - 2][26][rightY + 1 - j] = 2;
 
-            world[currentRight - 2][25][centerYLeft + 1 - j] = 2;
-            world[currentRight - 2][26][centerYLeft + 1 - j] = 2;
-
-            world[currentRight][25][centerYLeft - 1 - j] = 2;
-            world[currentRight][26][centerYLeft - 1 - j] = 2;
-
+            world[currentRight][25][rightY - 1 - j] = 2;
+            world[currentRight][26][rightY - 1 - j] = 2;
          }
       } else {
-         world[currentRight - 1][25][centerYLeft - 1] = 2;
-         world[currentRight - 1][26][centerYLeft - 1] = 2;
-         world[currentRight - 2][25][centerYLeft - 1] = 2;
-         world[currentRight - 2][26][centerYLeft - 1] = 2;
+         // extend 2 unit for the most bottom wall
+         world[currentRight - 1][25][rightY - 1] = 2;
+         world[currentRight - 1][26][rightY - 1] = 2;
+         world[currentRight - 2][25][rightY - 1] = 2;
+         world[currentRight - 2][26][rightY - 1] = 2;
 
+         // extend 2 unit for the most bottom wall
          world[currentLeft + 1][25][leftY + 1] = 2;
          world[currentLeft + 1][26][leftY + 1] = 2;
          world[currentLeft + 2][25][leftY + 1] = 2;
          world[currentLeft + 2][26][leftY + 1] = 2;
 
          for (int j = 1; j <= verticalDistance; j++) {
-
             world[currentLeft + 2][25][leftY + 1 - j] = 2;
             world[currentLeft + 2][26][leftY + 1 - j] = 2;
 
             world[currentLeft][25][leftY - 1 - j] = 2;
             world[currentLeft][26][leftY - 1 - j] = 2;
-
          }
       }
    } else {
@@ -722,9 +774,102 @@ void buildCorridor() {
       world[currentLeft + 1][25][leftY - 1] = 2;
       world[currentLeft + 1][26][leftY - 1] = 2;
 
-      world[currentRight - 1][25][centerYLeft + 1] = 2;
-      world[currentRight - 1][26][centerYLeft + 1] = 2;
-      world[currentRight - 1][25][centerYLeft - 1] = 2;
-      world[currentRight - 1][26][centerYLeft - 1] = 2;
+      world[currentRight - 1][25][rightY + 1] = 2;
+      world[currentRight - 1][26][rightY + 1] = 2;
+      world[currentRight - 1][25][rightY - 1] = 2;
+      world[currentRight - 1][26][rightY - 1] = 2;
    }
+
+}
+
+void buildVerticalCorridorWall(int topX, int topY, int buttomX, int buttomY) {
+   int remainder = 0;
+   int currentTop = 0;
+   int currentButtom = 0;
+
+   int horizaontalDistance = abs(topX - buttomX);
+   int verticalDistance = abs(topY - buttomY);
+
+   for (int i = 0; i < verticalDistance / 2; i++) {
+      world[topX + 1][25][topY + i] = 2;
+      world[topX + 1][26][topY + i] = 2;
+
+      world[topX - 1][25][topY + i] = 2;
+      world[topX - 1][26][topY + i] = 2;
+
+      world[buttomX + 1][25][buttomY - i] = 2;
+      world[buttomX + 1][26][buttomY - i] = 2;
+
+      world[buttomX - 1][25][buttomY - i] = 2;
+      world[buttomX - 1][26][buttomY - i] = 2;
+
+      currentTop = topY + i;
+      currentButtom = buttomY - i;
+   }
+   remainder = verticalDistance % 2;
+
+   if (remainder != 0) {
+      topY = currentTop;
+
+      for (int i = 1; i < remainder; i++) {
+         world[topX + 1][25][topY + i] = 2;
+         world[topX + 1][26][topY + i] = 2;
+
+         world[topX - 1][25][topY + i] = 2;
+         world[topX - 1][26][topY + i] = 2;
+
+         currentTop = topY + i;
+      }
+   }
+
+   if (horizaontalDistance != 0) {
+      if (topX < buttomX) {
+         world[topX - 1][25][currentTop + 1] = 2;
+         world[topX - 1][26][currentTop + 1] = 2;
+         world[topX - 1][25][currentTop + 2] = 2;
+         world[topX - 1][26][currentTop + 2] = 2;
+
+         world[buttomX + 1][25][currentButtom - 1] = 2;
+         world[buttomX + 1][26][currentButtom - 1] = 2;
+         world[buttomX + 1][25][currentButtom - 2] = 2;
+         world[buttomX + 1][26][currentButtom - 2] = 2;
+
+         for (int j = 1; j <= horizaontalDistance; j++) {
+            world[topX - 1 + j][25][currentTop + 2] = 2;
+            world[topX - 1 + j][26][currentTop + 2] = 2;
+
+            world[topX + 1 + j][25][currentTop] = 2;
+            world[topX + 1 + j][26][currentTop] = 2;
+         }
+      } else {
+         world[topX + 1][25][currentTop + 1] = 2;
+         world[topX + 1][26][currentTop + 1] = 2;
+         world[topX + 1][25][currentTop + 2] = 2;
+         world[topX + 1][26][currentTop + 2] = 2;
+
+         world[buttomX - 1][25][currentButtom - 1] = 2;
+         world[buttomX - 1][26][currentButtom - 1] = 2;
+         world[buttomX - 1][25][currentButtom - 2] = 2;
+         world[buttomX - 1][26][currentButtom - 2] = 2;
+
+         for (int j = 1; j <= horizaontalDistance; j++) {
+            world[buttomX - 1 + j][25][currentButtom - 2] = 2;
+            world[buttomX - 1 + j][26][currentButtom - 2] = 2;
+
+            world[buttomX + 1 + j][25][currentButtom] = 2;
+            world[buttomX + 1 + j][26][currentButtom] = 2;
+         }
+      }
+   } else {
+      world[topX + 1][25][currentTop + 1] = 2;
+      world[topX + 1][26][currentTop + 1] = 2;
+      world[topX - 1][25][currentTop + 1] = 2;
+      world[topX - 1][26][currentTop + 1] = 2;
+
+      world[buttomX + 1][25][currentButtom - 1] = 2;
+      world[buttomX + 1][26][currentButtom - 1] = 2;
+      world[buttomX - 1][25][currentButtom - 1] = 2;
+      world[buttomX - 1][26][currentButtom - 1] = 2;
+   }
+
 }
