@@ -11,19 +11,22 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <sys/time.h>
 
 #include "graphics.h"
 
 extern GLubyte  world[WORLDX][WORLDY][WORLDZ];
 int horizontalCorridor[3][8];
 int verticalCorridor[3][8];
-int spawnLocation[9][2];
-int spawnXInedx = 0;
-int spawnZIndex = 0;
+int clouds[4][3];
+int spawnLocation[3];
 int currentLevel = 1; // to track which level player current is
 
 struct Node {
    int level;
+   int spawnXInedx;
+   int spawnZIndex;
+   int spawnYIndex;
    GLubyte  worldSaved[WORLDX][WORLDY][WORLDZ];
    struct Node *next;
 };
@@ -32,20 +35,6 @@ struct Node *head = NULL;
 typedef struct {
     float x, y;
 } vector2;
-
-// perlin noise permutation set
-static int hash[] = {208,34,231,213,32,248,233,56,161,78,24,140,71,48,140,254,245,255,247,247,40,
-                     185,248,251,245,28,124,204,204,76,36,1,107,28,234,163,202,224,245,128,167,204,
-                     9,92,217,54,239,174,173,102,193,189,190,121,100,108,167,44,43,77,180,204,8,81,
-                     70,223,11,38,24,254,210,210,177,32,81,195,243,125,8,169,112,32,97,53,195,13,
-                     203,9,47,104,125,117,114,124,165,203,181,235,193,206,70,180,174,0,167,181,41,
-                     164,30,116,127,198,245,146,87,224,149,206,57,4,192,210,65,210,129,240,178,105,
-                     228,108,245,148,140,40,35,195,38,58,65,207,215,253,65,85,208,76,62,3,237,55,89,
-                     232,50,217,64,244,157,199,121,252,90,17,212,203,149,152,140,187,234,177,73,174,
-                     193,100,192,143,97,53,145,135,19,103,13,90,135,151,199,91,239,247,33,39,145,
-                     101,120,99,3,186,86,99,41,237,203,111,79,220,135,158,42,30,154,120,67,87,167,
-                     135,176,183,191,253,115,184,21,233,58,129,233,142,39,128,211,118,137,139,255,
-                     114,20,218,113,154,27,127,246,250,1,8,198,250,209,92,222,173,21,88,102,219};
 
 // function declarations start here
 
@@ -138,13 +127,21 @@ void buildCorridor();
 void buildHorizontalCorridorWall(int, int, int, int);
 void buildVerticalCorridorWall(int, int, int, int);
 void buildWorld(); // create the world and spawn the player in one of the room
+void buildOutDoorWorld(int); // create the outisde world
 float colorCodeConvert(int);
+void drawCloud (int, int, int);
+void moveCloud();
+int worldRange(int, int);
+int checkAround(int, int, int);
+
 // linkedList functions
 void appendLinkedList(struct Node **, int, GLubyte[WORLDX][WORLDY][WORLDZ]);
 struct Node* getNode(struct Node*, int);
+
 // game saving / loding functions
 void saveLevel(struct Node**, int);
 void loadLevel(struct Node**, int);
+
 // perlin noise functoins 
 //(Reference: https://en.wikipedia.org/wiki/Perlin_noise)
 float perlin(float, float, float);
@@ -329,7 +326,26 @@ createTube(2, -xx, -yy, -zz, -xx-((x-xx)*25.0), -yy-((y-yy)*25.0), -zz-((z-zz)*2
       /* your code goes here */
       getViewPosition(&x, &y, &z);
       setOldViewPosition(x,y,z);
-      //gravity();
+      gravity();
+
+      struct timeval systemTime;
+      static double cloudTime = 0.0;
+      double currentTime = 0.0;
+      gettimeofday(&systemTime, NULL);
+      currentTime = (systemTime.tv_sec) * 1000 + (systemTime.tv_usec) / 1000;
+
+      if (currentLevel == 1) {
+         if (currentTime - cloudTime >= 250.00) {
+            cloudTime = currentTime;
+            for (int i = 0; i < WORLDX; i++) {
+               for (int k = 0; k < WORLDZ; k++) {
+                  world[i][48][k] = 0; 
+               }
+            }
+            moveCloud();
+         }
+      }
+
 
       getOldViewPosition(&x, &y, &z);
       if (world[(int)x * -1][((int)y * -1) - 1][(int)z * -1] == 5) { // stair to go up
@@ -430,79 +446,30 @@ int main(int argc, char** argv) {
       /* my world starts here */
       /* make some cousmise colors */
       //printf("%f\n", rValue);
+      setUserColour(30, 0.96, 0.96, 0.96, 1.00, 0.48, 0.48, 0.48, 0.50);
       setUserColour(9, colorCodeConvert(128), colorCodeConvert(128), colorCodeConvert(128), 1.0, 0.2, 0.2, 0.2, 1.0); // grey cube
 
-      setUserColour(10, colorCodeConvert(92), colorCodeConvert(34), colorCodeConvert(0), 0.36, 0.2, 0.2, 0.2, 1.0); // brown 1
-      setUserColour(11, colorCodeConvert(66), colorCodeConvert(38), colorCodeConvert(21), 0.26,0.2, 0.2, 0.2, 1.0); // brown 2
-      setUserColour(12, colorCodeConvert(122), colorCodeConvert(45), colorCodeConvert(0), 0.48,0.2, 0.2, 0.2, 1.0); // brown 3
-      
-      for (i = 0; i < WORLDX; i++) {
-         for (j = 0; j < WORLDY; j++) {
-            for (k = 0; k < WORLDZ; k++) {
-               world[i][j][k] = 0;
-            }
-         }
-      }
+      setUserColour(10, colorCodeConvert(77), colorCodeConvert(38), colorCodeConvert(15),1.0, 
+                        colorCodeConvert(77 / 2), colorCodeConvert(38 / 2), colorCodeConvert(15 / 2), 1.0); // brown 1
+      setUserColour(11, colorCodeConvert(61), colorCodeConvert(18), colorCodeConvert(0), 1.0 ,
+                        colorCodeConvert(61 / 2), colorCodeConvert(18 / 2), colorCodeConvert(0 / 2), 1.0); // brown 2
+      setUserColour(12, colorCodeConvert(66), colorCodeConvert(30), colorCodeConvert(0), 1.0,
+                        colorCodeConvert(66 / 2), colorCodeConvert(30 / 2), colorCodeConvert(0 / 2), 1.0); // brown 3
 
-      for (i = 0; i < WORLDX; i++) {
-         for (k = 0; k < WORLDZ; k++) {
-            float result = (float)perlin(i, k, 0.09);
-            result = result * 15;
-            //printf("%f\n", result);
-            if (result < 0.0) {
-               if (result > -0.4) {
-                  for (int a = 0; a < 12; a++) {
-                     world[i][24 - a][k] = 11;
-                  }
-               } else if (result < -0.5 && result > -1.0) {
-                  for (int a = 0; a < 12; a++) {
-                     world[i][24 - 1 - a][k] = 11;
-                  }
-               } else {
-                  for (int a = 0; a < 10; a++) {
-                     world[i][24 + (int)result - a][k] = 11;
-                  }
-               }
-            } else if (result > 0.0) {
-               if (result < 0.4) {
-                  for (int a = 0; a < 12; a++) {
-                     world[i][24 - a][k] = 11;
-                  }
-               } else if (result > 0.5 && result < 1.0){
-                  for (int a = 0; a < 12; a++) {
-                     world[i][25 - a][k] = 11;
-                  }
-                  world[i][24 + 1][k] = 1;
-               } else {
-                  for (int a = 0; a < 18; a++) {
-                     world[i][(24 + (int)result) - a][k] = 11;
-                  }
-               }
-            } else {
-               world[i][24][k] = 3;
-            }
-         }
-      }
+      setUserColour(14, colorCodeConvert(0), colorCodeConvert(97), colorCodeConvert(0), 1.00, 
+                        colorCodeConvert(0), colorCodeConvert(97 / 2), colorCodeConvert(0), 1.00); // dark green
 
-       for (i = 0; i < WORLDX; i++) {
-         for (j = 0; j < WORLDY; j++) {
-            for (k = 0; k < WORLDZ; k++) {
-               if (world[i][j][k] != 0) {
-                  if (j <= 18) {
-                     world[i][j][k] = 10;
-                  } else if (j >= 30) {
-                     world[i][j][k] = 5;
-                  } else {
-                     world[i][j][k] = 1;
-                  }
-               }
-            }
-         }
-      }
+      setUserColour(15, colorCodeConvert(0), colorCodeConvert(102), colorCodeConvert(0), 1.00, 
+                        colorCodeConvert(0), colorCodeConvert(102 / 2), colorCodeConvert(0), 1.00); // dark green
 
+      setUserColour(16, colorCodeConvert(0), colorCodeConvert(107), colorCodeConvert(0), 1.00, 
+                        colorCodeConvert(0), colorCodeConvert(107 / 2), colorCodeConvert(0), 1.00); // dark green
 
-      //buildWorld();
+      setUserColour(17, colorCodeConvert(0), colorCodeConvert(112), colorCodeConvert(0), 1.00, 
+                        colorCodeConvert(0), colorCodeConvert(112 / 2), colorCodeConvert(0), 1.00); // dark green
+      buildOutDoorWorld(0);
    }
+
 
 	/* starts the graphics processing loop */
 	/* code after this will not run until the program exits */
@@ -584,11 +551,6 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
          centerDoorBottom = randomNumber(startX + 3, endX - 3);
          centerDoorRight = randomNumber(startZ + 3, endZ - 3);
 
-         spawnX = randomNumber(startX + 3, endX - 3);
-         spawnZ = randomNumber(startZ + 3, endZ - 3);
-         spawnLocation[0][0] = spawnX;
-         spawnLocation[0][1] = spawnZ;
-
          for (int i = -1; i <= 1; i++) {
             for (int j = 1; j <= 3; j++) {
                // door at the bottom
@@ -609,11 +571,6 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
          centerDoorBottom = randomNumber(startX + 3, endX - 3);
          centerDoorRight = randomNumber(startZ + 3, endZ - 3);
          centerDoorLeft = randomNumber(startZ + 3, endZ - 3);
-
-         spawnX = randomNumber(startX + 3, endX - 3);
-         spawnZ = randomNumber(startZ + 3, endZ - 3);
-         spawnLocation[1][0] = spawnX;
-         spawnLocation[1][1] = spawnZ;
          
          for (int i = -1; i <= 1; i++) {
             for (int j = 1; j <= 3; j++) {
@@ -640,11 +597,6 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
          centerDoorBottom = randomNumber(startX + 3, endX - 3);
          centerDoorLeft = randomNumber(startZ + 3, endZ - 3);
          
-         spawnX = randomNumber(startX + 3, endX - 3);
-         spawnZ = randomNumber(startZ + 3, endZ - 3);
-         spawnLocation[2][0] = spawnX;
-         spawnLocation[2][1] = spawnZ;
-         
          for (int i = -1; i <= 1; i++) {
             for (int j = 1; j <= 3; j++) {
                // door at the bottom
@@ -665,11 +617,6 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
          centerDoorBottom = randomNumber(startX + 3, endX - 3);
          centerDoorRight = randomNumber(startZ + 3, endZ - 3);
          centerDoorTop = randomNumber(startX + 3, endX - 3);
-
-         spawnX = randomNumber(startX + 3, endX - 3);
-         spawnZ = randomNumber(startZ + 3, endZ - 3);
-         spawnLocation[3][0] = spawnX;
-         spawnLocation[3][1] = spawnZ;
 
          for (int i = -1; i <= 1; i++) {
             for (int j = 1; j <= 3; j++) {
@@ -697,10 +644,11 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
          centerDoorTop = randomNumber(startX + 3, endX - 3);
          centerDoorLeft = randomNumber(startZ + 3, endZ - 3);
 
-         spawnX = randomNumber(startX + 3, endX - 3);
-         spawnZ = randomNumber(startZ + 3, endZ - 3);
-         spawnLocation[4][0] = spawnX;
-         spawnLocation[4][1] = spawnZ;
+         cubeLocX = randomNumber((endX - startX) / 2 - 5, (endX - startX) / 2 + 5);
+         cubeLocZ = randomNumber((endZ - startZ) / 2 - 5, (endZ - startZ) / 2 + 5);
+         // a randomCube in side the room
+         world[startX + cubeLocX][25][startZ + cubeLocZ] = 3;
+
 
          for (int i = -1; i <= 1; i++) {
             for (int j = 1; j <= 3; j++) {
@@ -733,10 +681,11 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
          centerDoorLeft = randomNumber(startZ + 3, endZ - 3);
          centerDoorBottom = randomNumber(startX + 3, endX - 3);
 
-         spawnX = randomNumber(startX + 3, endX - 3);
-         spawnZ = randomNumber(startZ + 3, endZ - 3);
-         spawnLocation[5][0] = spawnX;
-         spawnLocation[5][1] = spawnZ;
+         cubeLocX = randomNumber((endX - startX) / 2 - 5, (endX - startX) / 2 + 5);
+         cubeLocZ = randomNumber((endZ - startZ) / 2 - 5, (endZ - startZ) / 2 + 5);
+         // a randomCube in side the room
+         world[startX + cubeLocX][25][startZ + cubeLocZ] = 3;
+
 
          for (int i = -1; i <= 1; i++) {
             for (int j = 1; j <= 3; j++) {
@@ -763,10 +712,10 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
          centerDoorRight = randomNumber(startZ + 3, endZ - 3);
          centerDoorTop = randomNumber(startX + 3, endX - 3);
 
-         spawnX = randomNumber(startX + 3, endX - 3);
-         spawnZ = randomNumber(startZ + 3, endZ - 3);
-         spawnLocation[6][0] = spawnX;
-         spawnLocation[6][1] = spawnZ;
+         cubeLocX = randomNumber((endX - startX) / 2 - 5, (endX - startX) / 2 + 5);
+         cubeLocZ = randomNumber((endZ - startZ) / 2 - 5, (endZ - startZ) / 2 + 5);
+         // a randomCube in side the room
+         world[startX + cubeLocX][25][startZ + cubeLocZ] = 3;
 
          for (int i = -1; i <= 1; i++) {
             for (int j = 1; j <= 3; j++) {
@@ -788,11 +737,10 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
          centerDoorTop = randomNumber(startX + 3, endX - 3);
          centerDoorLeft = randomNumber(startZ + 3, endZ - 3);
 
-         spawnX = randomNumber(startX + 3, endX - 3);
-         spawnZ = randomNumber(startZ + 3, endZ - 3);
-         spawnLocation[7][0] = spawnX;
-         spawnLocation[7][1] = spawnZ;
-
+         cubeLocX = randomNumber((endX - startX) / 2 - 5, (endX - startX) / 2 + 5);
+         cubeLocZ = randomNumber((endZ - startZ) / 2 - 5, (endZ - startZ) / 2 + 5);
+         // a randomCube in side the room
+         world[startX + cubeLocX][25][startZ + cubeLocZ] = 3;
 
          for (int i = -1; i <= 1; i++) {
             for (int j = 1; j <= 3; j++) {
@@ -817,20 +765,25 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
       case 9:
          centerDoorTop = randomNumber(startX + 3, endX - 3);
          centerDoorLeft = randomNumber(startZ + 3, endZ - 3);
-
-         cubeLocX = randomNumber((endX - startX) / 2 - 5, (endX - startX) / 2 + 5);
-         cubeLocZ = randomNumber((endZ - startZ) / 2 - 5, (endZ - startZ) / 2 + 5);
+         
+         //printf("here\n");
+         //cubeLocX = randomNumber(startX + 5, endX / 2);
+         //cubeLocZ = randomNumber(startZ + 5, endZ / 2);
          // a randomCube in side the room
-         world[startX + cubeLocX][25][startZ + cubeLocZ] = 5;
+         world[startX + 5][25][startZ + 5] = 5;
+         
+         //printf("here1\n");
+         //cubeLocX = randomNumber(startX + 15, endX);
+         //cubeLocZ = randomNumber(startZ + 15, endZ);
+         world[endX - 5][24][endZ - 5] = 9;
 
-         cubeLocX = randomNumber((endX - startX) / 2 - 7, (endX - startX) / 2 + 7);
-         cubeLocZ = randomNumber((endZ - startZ) / 2 - 7, (endZ - startZ) / 2 + 7);
-         world[startX + cubeLocX][24][startZ + cubeLocZ] = 9;
-
+         //printf("here2\n");
+         
          spawnX = randomNumber(startX + 3, endX - 3);
          spawnZ = randomNumber(startZ + 3, endZ - 3);
-         spawnLocation[8][0] = spawnX;
-         spawnLocation[8][1] = spawnZ;
+         spawnLocation[0] = endX - 4;
+         spawnLocation[1] = 26;
+         spawnLocation[2] = endZ - 4;
          
          for (int i = 0; i <= 1; i++) {
             for (int j = 1; j <= 3; j++) {
@@ -1110,14 +1063,145 @@ void buildWorld() {
 
    generateRoom(0,33,68,99, 7); // index {0, 2}
    generateRoom(34,67,68,99, 8); // index {1, 2}
-   generateRoom(68,99,69,99, 9); // index {2, 2}
+   generateRoom(69,99,69,99, 9); // index {2, 2}
    
    buildCorridor();
 
-   
-   spawnXInedx = spawnLocation[8][0] * -1;
-   spawnZIndex = spawnLocation[8][1] * -1;
-   setViewPosition(spawnXInedx,-25 - 0.2,spawnZIndex);
+   setViewPosition((spawnLocation[0] * -1 - 2),-25- 0.2,(spawnLocation[2] * -1 - 1));
+}
+
+void buildOutDoorWorld(int offset){
+   int i, j, k;
+
+   for (i = 0; i < WORLDX; i++) {
+         for (j = 0; j < WORLDY; j++) {
+            for (k = 0; k < WORLDZ; k++) {
+               world[i][j][k] = 0;
+            }
+         }
+      }
+
+   for (i = 0; i < WORLDX; i++) {
+      for (k = 0; k < WORLDZ; k++) {
+         float result = (float)perlin(i + offset, k, 0.085);
+         result = result * 11.7;
+         //printf("%f\n", result);
+         if (result < 0.0) {
+            if (result > -0.4) {
+               for (int a = 0; a < 12; a++) {
+                  world[i][24 - a][k] = 11;
+               }
+            } else if (result < -0.5 && result > -1.0) {
+               for (int a = 0; a < 12; a++) {
+                  world[i][24 - 1 - a][k] = 11;
+               }
+            } else {
+               for (int a = 0; a < 10; a++) {
+                  world[i][24 + (int)result - a][k] = 11;
+               }
+            }
+         } else if (result > 0.0) {
+            if (result < 0.4) {
+               for (int a = 0; a < 12; a++) {
+                  world[i][24 - a][k] = 11;
+               }
+            } else if (result > 0.5 && result < 1.0){
+               for (int a = 0; a < 12; a++) {
+                  world[i][25 - a][k] = 11;
+               }
+               world[i][24 + 1][k] = 1;
+            } else {
+               for (int a = 0; a < 18; a++) {
+                  world[i][(24 + (int)result) - a][k] = 11;
+               }
+            }
+         } else {
+            world[i][24][k] = 3;
+         }
+      }
+   }
+
+   int entry = 0;
+   for (i = 0; i < WORLDX; i++) {
+      for (j = 0; j < WORLDY; j++) {
+         for (k = 0; k < WORLDZ; k++) {
+            if (world[i][j][k] != 0) {
+               if (j <= 21) {
+                  world[i][j][k] = randomNumber(10, 12);
+               } else if (j >= 28) {
+                  world[i][j][k] = 30;
+               } else {
+                  if (i > 45 && k > 45 && j > 25 && entry == 0) {
+                     if (checkAround(i, j, k)) {
+                        //printf("%d, %d, %d\n", i, j, k);
+                        spawnLocation[0] = i - 1;
+                        spawnLocation[1] = j;
+                        spawnLocation[2] = k;
+                        world[i][j][k] = 9;
+                        entry = 1;
+                     }
+                  } else {
+                     world[i][j][k] = randomNumber(14, 17);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   for (i = 0; i < 4; i++) {
+      clouds[i][0] = randomNumber(4, 8); // clouds radius
+      clouds[i][1] = rand() % (100 + 1 - 16 * 2) + 16;
+      clouds[i][2] = rand() % (100 + 1 - 16 * 2) + 16;
+   }
+
+   for (i = 0; i < 4; i++) {
+      drawCloud(clouds[i][0],clouds[i][1],clouds[i][2]);
+   }
+
+   setViewPosition(spawnLocation[0] * -1,-29-0.2,spawnLocation[2] * -1);
+}
+
+void moveCloud() { 
+   for (int i = 0; i < 4; i++) {
+      clouds[i][1] += 1;
+      if ((clouds[i][1]) > WORLDX - 1) {
+         clouds[i][1] = 0;
+      }
+      drawCloud(clouds[i][0],clouds[i][1],clouds[i][2]);
+   }
+}
+
+void drawCloud (int radius, int xCenter, int zCenter) {
+   for (int i = -radius; i < radius; i++) {
+      for (int j = -radius; j < radius; j++) {
+         if (i * i + j * j < radius * radius) {
+            if (worldRange(xCenter + j, zCenter + i)) {
+               world[xCenter + j][48][zCenter + i] = 30;
+            } else {
+               int newX = xCenter + j;
+               int newZ = zCenter + i;
+
+               if ((xCenter + j) > WORLDX - 1) {
+                  newX -= WORLDX;
+               }
+
+               if ((zCenter + i) > WORLDZ - 1) {
+                  newZ -= WORLDZ;
+               }
+
+               world[newX][48][newZ] = 30;
+            }
+         }
+      }
+   }
+}
+
+int worldRange(int x, int z) {
+   if (x >= WORLDX || x < 0 || z >= WORLDZ || z < 0) {
+      return 0;
+   }
+   return 1;
 }
 
 float colorCodeConvert(int value) {
@@ -1132,22 +1216,22 @@ void saveLevel(struct Node** head, int level) {
    targetNode = getNode(*head, level);
 
    if (targetNode == NULL) {
-      //printf("Saveing Level#%d into linkedList\n", level);
+      printf("Saveing Level#%d into linkedList\n", level);
       appendLinkedList(head, level, world);
    }
-   //printf("\n");
+   printf("\n");
 }
 
    /* load the world(either from linkedlist or generate a new world)*/
 void loadLevel(struct Node** head, int level) {
    struct Node *targetNode = NULL;
    int i, j, k;
-   //printf("now searching level %d....\n", level);
+   printf("now searching level %d....\n", level);
    // check if current level already been saved
    targetNode = getNode(*head, level);
    // if there is level / load the world
    if (targetNode != NULL) {
-      //printf("Loading world...\n\n");
+      printf("Loading world...\n\n");
       for (i = 0; i < WORLDX; i++) {
          for (j = 0; j < WORLDY; j++) {
             for (k = 0; k < WORLDZ; k++) {
@@ -1155,18 +1239,30 @@ void loadLevel(struct Node** head, int level) {
             }
          }
       }
+      setViewPosition(targetNode->spawnXInedx * -1, -27-0.2, targetNode->spawnZIndex * -1);
    } else {
-      //printf("Build world...\n\n");
+      printf("Build world...\n\n");
       buildWorld();
    }
 }
+
+int checkAround(int x, int y, int z) {
+   if (world[x][y + 1][z] == 0) {
+      return 1;
+   }
+   return 0;
+}
+
 
 /***********Healper functions(LinkedList)***********/
 void appendLinkedList(struct Node **headReference, int level, GLubyte toBeSaved[WORLDX][WORLDY][WORLDZ]) {
    struct Node *newNode = (struct Node*)malloc(sizeof(struct Node));
    struct Node* temp = *headReference;
-
    newNode->level = level;
+   newNode->spawnXInedx = spawnLocation[0];
+   newNode->spawnYIndex = spawnLocation[1];
+   newNode->spawnZIndex = spawnLocation[2];
+
    for (int i = 0; i < WORLDX; i++) {
       for (int j = 0; j < WORLDY; j++) {
          for (int k = 0; k < WORLDZ; k++) {
