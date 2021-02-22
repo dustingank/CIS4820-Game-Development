@@ -127,8 +127,8 @@ float det, detx, dety, detz;
 /* code from */
 /* http://www.crownandcutlass.com/features/technicaldetails/frustum.html */
 float frustum[6][4];
-int true = 1;
-int false = 0;
+int True = 1;
+int False = 0;
 
 void ExtractFrustum()
 {
@@ -249,8 +249,8 @@ int PointInFrustum( float x, float y, float z )
 
    for( p = 0; p < 6; p++ )
       if( frustum[p][0] * x + frustum[p][1] * y + frustum[p][2] * z + frustum[p][3] <= 0 )
-         return false;
-   return true;
+         return False;
+   return True;
 }
 
 int CubeInFrustum( float x, float y, float z, float size )
@@ -310,9 +310,9 @@ int CubeInFrustum2( float x, float y, float z, float size )
          continue;
       if( frustum[p][0] * (x + size) + frustum[p][1] * (y + size) + frustum[p][2] * (z + size) + frustum[p][3] > 0 )
          continue;
-      return false;
+      return False;
    }
-   return true;
+   return True;
 }
 
 

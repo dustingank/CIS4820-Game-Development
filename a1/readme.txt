@@ -102,7 +102,7 @@ int setUserColour(int id, GLfloat ambRed, GLfloat ambGreen, GLfloat ambBlue,
   GLfloat ambAlpha, GLfloat difRed, GLfloat difGreen, GLfloat difBlue,
   GLfloat difAlpha);
 where:
-   id is the number to which the colour is alocated. It must be
+   id is the number to which the colour is allocated. It must be
       9 and 99. This is also the value that must be stored in the 
       world array.
    ambRed, ambGreen, ambBlue, ambAlpha are the RGBA values for the ambient
@@ -381,7 +381,7 @@ functions with the names changed to indicate they control players.
    void hidePlayer(int number);
    void showPlayer(int number);
 
-There is a example of a player drawn in the sample world.
+There is an example of a player drawn in the sample world.
 
 
 15. Space Flag
@@ -435,6 +435,188 @@ void showTube(int number);
 -Restart drawing the tube. Used only after hideTube() stops drawing. 
 -number is the identifier of the tube.
 
+18. Applying Textures to Cubes
+------------------------------
+Textures are associated with the id numbers that represent user defined
+colours. You can assign a colour, a texture, or both to a colour id.
+The texture currently replaces all colour information.
+
+To use a texture, create a used defined colour and then assign a texture
+id number to it using setAssignedTexture(). The texture id number is
+the numeric part of the file name in the /textures directory.
+The sequence of operations to make a texture appear is:
+      setUserColour(10, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+      setAssignedTexture(10, 22);
+      world[59][25][50] = 10;
+This will create user defined colour number 10. 
+Then assign a texture 22 to that colour number 10.
+Then place a block in the world array with that colour/texture 10.
+
+
+int setAssignedTexture(int colourid, int textureid);
+where:
+   colourid is the user defined colour number that will have a texture
+      assigned to it
+   textureid is the texture number to assign to that colour id
+-returns 0 on success and 1 on failure
+
+int getAssignedTexture(int id);
+where:
+   the return value is the texture number associated with id
+
+void setTextureOffset(int id, float uoffset, float voffset);
+where
+   id is the colour id to which the texture offset will be applied
+   uoffset is the amount of offset is the texture u coordinate (horizontal)
+   voffset is the amount of offset is the texture v coordinate (vertical)
+Note that the texture offsets are stored with the colourId and not the
+textures. This means you can use the same texture with different colours
+and use different texture offset. For example, some textures can be offset
+while others are not (or they are offset to different values).
+
+The colour of the texture will be a blend of the object colour which
+is set using setUserColour() and the colours in the texture image.
+If you set the colour of the object to be all white using:
+	setUserColour(12, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+then only the colour in the texture image will be displayed. This is a
+reasonable default method for using textures. If you make the base colour
+something other than white then the result will be a tinted version of the
+original texture. This is a way to add variety to textures by using the
+same texture but tinting it with different colours.
+
+Texture files are stored in a subdirectory named textures. Each texture
+file is named with a number followed by the .ppm suffix. The numbers from
+0 to 50 are used for textures that are supplied with the game engine.
+These are textures 0.ppm to 50.ppm. 
+
+The texture files must be ppm files of type 3 (ASCII) or type 6 ppm (binary)
+files No other format of texture files will load correctly.
+Textures must be 256x256 pixels.
+
+More textures can be added by converting other file formats to .ppm. To do
+this, load the texture images into Gimp (GNU Image Manipulation Program),
+resize them to 256 pixels square, and export them as .ppm files.
+
+If you add more textures to the system then place them in the /textures
+directory. They must be named with a number followed by .ppm. The number
+will be the textureid that is used with the function:
+     int setAssignedTexture(int colourid, int textureid);
+to identify the texture in the game. Do not use any other format for the
+names of that texture files.
+
+The current maximum number of textures the system can support is 100. If you
+want to increase this then change the NUMBERTEXTURES macro and recompile the
+code.
+
+
+19. Using 3D Models from obj files
+----------------------------------
+3D models are also associated with an id number. These id numbers are different
+to those used for textures that are applied to cubes.  Each 3D model that
+you display will have its own id number. It will also have a mesh number which
+determines which model will be drawn. For instance, the mesh of the cow 
+has a mesh number of 0. The mesh numbers for the currently available models
+that you can use in the game are:
+
+	Mesh Number	Model
+	0		cow
+	1		fish
+	2		bat
+	3		cactus
+
+If you wanted to create three fish, they would all have the mesh number of 1.
+Each of the fish would have it's own unique id which is assigned by the
+user.
+
+The functions used to add and control 3D meshes are:
+
+void setMeshID(int id, int meshNumber, float xpos, float ypos, float zpos)
+	-create a 3D mesh mesh and place it in the game world
+	-the id is the unique identifier for that mesh, it is used to
+	 modify the size, location, rotation, visibility of the mesh.
+	-the meshNumber identifies which mesh to draw
+	-xpos, ypos, zpos are the location in the world where the mesh will
+	 be drawn. These correspond to the location in the world array but are
+	 floating point numbers. This allows the mesh objects to be positioned
+	 anywhere in the world array and not only at the integer positions
+	 of the cubes.
+
+void unsetMeshID(int id)
+	-frees the mesh id number and removes the mesh from the screen
+	-this deallocates the mesh id so it can be reused again
+	-use only if you want to reuse the id number, if you want to stop
+	 drawing a mesh then you can use hideMesh() instead.
+
+void setTranslateMesh(int id, float xpos, float ypos, float zpos)
+	-move a mesh to a new (x,y,z) location
+	-gradually changing these values can be used to animate motion
+
+void setRotateMesh(int id, float xrot, float yrot, float zrot)
+	-rotate the mesh around the x, y, and z axis
+	-rotation values are measured in degrees
+	-rotations are done in the order of x rotation first, y rotation second,
+	 z rotation third
+	-mesh objects are not oriented the same way, you will need to rotate
+	 them (most likely around the y axis) to make them face in the
+	 direction you wish 
+
+void setScaleMesh(int id, float scale)
+	-resizes the mesh, a scale of 1.0 is default the size of the mesh,
+	 a value of 0.5 would reduce the size by half in three dimensions,
+	 a value of 2.0 would double the size of the mesh in three dimensions. 
+	-the default mesh sizes are not related to the size of the game
+	 world cubes. You may need to scale the meshes to make them fit within
+	 the world
+
+void drawMesh(int id);
+void hideMesh(int id);
+	-these two functions turn the drawing on and off for an individual mesh
+	-the mesh id is still associated with the object but it is not
+	 drawn when hideMesh() is used
+
+
+An example of using these functions.
+If you do this:
+   setMeshID(10, 2, 10, 10, 10);
+it will create an id number if 10, and associate model 2 (bat) with
+that number. It will also place a copy of the bat at location (10,10,10)
+in the world.  If you follow that function with:
+   setRotateMesh(10, 0.0, 9.0, 0.0);
+it will rotate the fish associated with id 10 by 90 degrees around the
+y axis. This fish will continue to be drawn in this positions until another
+function is called with moves or hides the fish. 
+
+The models and textures for the models are stored in numbered file names.
+For example, the first file is named 0.obj and the associated texture is 0.ppm.
+The files must be stored in the /models directory. The numbers of the files
+in the /models directory is the same as the mesh numbers listed above
+(e.g. 0==cow, 1==fish, 2==bat, 3==cactus).
+
+The .obj files must contain only triangles.
+The textures must be .ppm files. They can be either binary or ASCII.
+Textures are limited to 256x256 pixels.
+Only texture colouring is used with the mesh. Vertex colours are not used
+by the game engine. 
+
+To convert a mesh for use with the game:
+1. Make sure the model is made entirely of triangles. You can load the mesh
+   into a 3D modelling program such as Blender and convert all of polygons
+   to triangles. Then save the model as a .obj file (Wavefront .obj format).
+2. Make the texture file is 256x256 pixels. This can be done using an image
+   editing program such as Gimp. Resize the image to be 256x256 pixels.
+3. The image must be in the .ppm format. Export the file to .ppm format.
+   It can be either binary or ASCII format.
+4. Name both of the files with a number. The system comes with models 0 to 4
+   so add numbers after 4. Both the texture and the model file must be
+   named with the same number. For example, 5.obj and 5.ppm would be the
+   model and the texture files for object 5.
+
+If the mesh is not made entirely of triangles or the texture is not in the
+correct format then the game engine will exit and print an error message
+which indicates the problem it found while reading the files.
+
+
+====================================================================
 
 Appendix A - Culling Objects that Cannot Be Seen
 ------------------------------------------------
@@ -452,7 +634,7 @@ that you want to be drawn. The function addDisplayList() is used to
 add cubes to the list.
         e.g. The following would set the cube at world[1][3][5] to be drawn.
             addDisplayList(1,3,5);
-This is used so then entire world is not drawn with each frame.
+This is used so the entire world is not drawn with each frame.
 Only the cubes which you determine are visible should be added
 to the display list.
 
@@ -487,5 +669,52 @@ Frames Per Second (FPS) Printing
 The FPS are no longer printed automatically. There is a -fps command
 line flag which turns this functionality one.
 
+====================================================================
+
+Appendix B - The PPM File Format
+----------------------------
+The ppm files are assumed to have the one of the following formats.
+
+ASCII Files
+-----------
+P3
+#comment line
+width height
+pixel-depth
+--- rgb data in ASCII format---
+
+Binary Files
+------------
+P6
+#comment line
+width height
+pixel-depth
+--- rgb data in ASCII format---
+
+This is the format created by exporting to ppm using GIMP.
+The file specification for ppm files allows comments to end of line
+anywhere after the # symbol. If the files do not have the exact format
+listed above then they will not work correctly. Additional comments or
+comments after data values will not parse correctly. There must be one
+comment line after either the P3 or P6 file type indicator.
+
+The file width and height is currently limited to 256x256 pixel.
+
+
+References
+----------
+These people and web sites were all helpful in building this code.
+
+Fast C object parser fast_obj from:
+   https://github.com/thisistherk/fast_obj
+Author: Richard Knight, thisistherk
+
+OpenGL ideas and code from:
+-Starting code derived from scene.c in the The OpenGL Programming Guide
+-Keyboard and mouse rotation taken from Swiftless Tutorials #23 Part 2 
+ http://www.swiftless.com/tutorials/opengl/camera2.html
+
+Frustum culling source code taken from:
+        http://www.crownandcutlass.com/features/technicaldetails/frustum.html
 
 

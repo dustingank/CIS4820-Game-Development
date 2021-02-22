@@ -3,6 +3,11 @@
         "string_view": "c",
         "random": "c",
         "limits": "c",
-        "ranges": "c"
+        "ranges": "c",
+        "time.h": "c",
+        "graphics.h": "c",
+        "stdlib.h": "c",
+        "clouds.h": "c",
+        "gameworldgenerate.h": "c"
     }
 }
