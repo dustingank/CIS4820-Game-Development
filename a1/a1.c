@@ -21,6 +21,9 @@
 
 extern GLubyte  world[WORLDX][WORLDY][WORLDZ];
 int currentLevel = 1; // to track which level player current is
+GLint m_viewport[4];
+int screenHeight;
+int screenWidth;
 
 struct Node {
    int level;
@@ -28,6 +31,7 @@ struct Node {
    int spawnZIndex;
    int spawnYIndex;
    GLubyte  worldSaved[WORLDX][WORLDY][WORLDZ];
+   struct mesh allMeshObjs[9];
    struct Node *next;
 };
 struct Node *head = NULL;
@@ -78,6 +82,12 @@ extern void  draw2Dbox(int, int, int, int);
 extern void  draw2Dtriangle(int, int, int, int, int, int);
 extern void  set2Dcolour(float []);
 
+   /* texture functions */
+extern int setAssignedTexture(int, int);
+extern void unsetAssignedTexture(int);
+extern int getAssignedTexture(int);
+extern void setTextureOffset(int, float, float);
+
 
 	/* flag which is set to 1 when flying behaviour is desired */
 extern int flycontrol;
@@ -126,10 +136,9 @@ extern void hideMesh(int);
 /********* My functions *********/
 int collionDetaction(float, float, float);
 void gravity();
-void buildOutDoorWorld(int); // create the outisde world
-void drawCloud (int, int, int);
-void moveCloud();
 
+int getScreenWeight();
+int getScreenHeight();
 // linkedList functions
 void appendLinkedList(struct Node **, int, GLubyte[WORLDX][WORLDY][WORLDZ]);
 struct Node* getNode(struct Node*, int);
@@ -196,7 +205,6 @@ void collisionResponse() {
 	/*	set2Dcolour(float []); 				*/
 	/* colour must be set before other functions are called	*/
 void draw2D() {
-
    if (testWorld) {
 		/* draw some sample 2d shapes */
       if (displayMap == 1) {
@@ -210,9 +218,48 @@ void draw2D() {
          draw2Dbox(500, 380, 524, 388);
       }
    } else {
+      
+      if (displayMap == 1) {
+         screenHeight = getScreenHeight();
+         screenWidth = getScreenWeight();
 
-	/* your code goes here */
+         GLfloat black[] = {0.0, 0.0, 0.0, 0.5};
+         GLfloat white[] = {1.0, 1.0, 1.0, 1.0};
 
+         int mapSize = ((screenWidth / 2) / WORLDX) * WORLDX;
+         int blockSize = mapSize / WORLDX;
+         //printf("mapSize: %d blockSize: %d height: %d width: %d\n", mapSize, blockSize, screenHeight, screenWidth);
+         int offsetWidth = (screenWidth - mapSize) / 2;
+         int offsetHeigh = (screenHeight - mapSize) / 2 + (mapSize - (2 * blockSize));
+
+         float x = 0.0;
+         float y = 0.0;
+         float z = 0.0;
+         getViewPosition(&x, &y, &z);
+         x = x * -1;
+         z = z * -1;
+
+         set2Dcolour(black);
+         draw2Dbox(offsetWidth + (blockSize * (int)x), offsetHeigh - (blockSize * (int)z),
+                     offsetWidth + (blockSize * (int)x) + blockSize, offsetHeigh - (blockSize * (int)z) + blockSize);
+
+         for (int i = 0; i < WORLDX; i++) {
+            for (int j = 0; j < WORLDZ; j++) {
+               if (world[i][25][j] != 0 && world[i][25][j] != 6) {
+                  set2Dcolour(black);
+                  draw2Dbox(offsetWidth + (blockSize * i), offsetHeigh - (blockSize * j),
+                     offsetWidth + (blockSize * i) + blockSize, offsetHeigh - (blockSize * j) + blockSize);
+               }
+               if (world[i][28][j] != 0)  {
+                  set2Dcolour(white);
+                  draw2Dbox(offsetWidth + (blockSize * i), offsetHeigh - (blockSize * j),
+                     offsetWidth + (blockSize * i) + blockSize, offsetHeigh - (blockSize * j) + blockSize);
+               }
+            }
+         }
+      }
+
+      //if (displayMap == 2) {}
    }
 
 }
@@ -261,6 +308,14 @@ createTube(2, -xx, -yy, -zz, -xx-((x-xx)*25.0), -yy-((y-yy)*25.0), -zz-((z-zz)*2
       static int colourCount = 0;
       static GLfloat offset = 0.0;
 
+   /* offset counter for animated texture */
+      static float textureOffset = 0.0;
+
+	/* scaling values for fish mesh */
+      static float fishScale = 1.0;
+      static int scaleCount = 0;
+      static GLfloat scaleOffset = 0.0;
+
 	/* move mob 0 and rotate */
 	/* set mob 0 position */
       setMobPosition(0, mob0x, mob0y, mob0z, mob0ry);
@@ -308,8 +363,28 @@ createTube(2, -xx, -yy, -zz, -xx-((x-xx)*25.0), -yy-((y-yy)*25.0), -zz-((z-zz)*2
 	/* draws a purple tube above the other sample objects */
        createTube(1, 45.0, 30.0, 45.0, 50.0, 30.0, 50.0, 6);
 
-    /* end testworld animation */
+    /* move texture for lava effect */
+      textureOffset -= 0.01;
+      setTextureOffset(18, 0.0, textureOffset);
 
+	/* make fish grow and shrink (scaling) */
+      if (scaleCount == 1) scaleOffset += 0.01;
+      else scaleOffset -= 0.01;
+      if (scaleOffset >= 0.5) scaleCount = 0;
+      if (scaleOffset <= 0.0) scaleCount = 1;
+      setScaleMesh(1, 0.5 + scaleOffset);
+
+	/* make cow with id == 2 appear and disappear */
+	/* use scaleCount as switch to flip draw/hide */
+	/* rotate cow while it is visible */
+      if (scaleCount == 0) {
+         drawMesh(2);
+         setRotateMesh(2, 0.0, 180.0 + scaleOffset * 100.0, 0.0);
+      } else {
+         hideMesh(2);
+      }
+
+    /* end testworld animation */
 
    } else {
       /* your code goes here */
@@ -319,6 +394,8 @@ createTube(2, -xx, -yy, -zz, -xx-((x-xx)*25.0), -yy-((y-yy)*25.0), -zz-((z-zz)*2
 
       struct timeval systemTime;
       static double cloudTime = 0.0;
+      static double meshTime = 0.0;
+
       double currentTime;
       gettimeofday(&systemTime, NULL);
       currentTime = (systemTime.tv_sec) * 1000 + (systemTime.tv_usec) / 1000;
@@ -333,24 +410,53 @@ createTube(2, -xx, -yy, -zz, -xx-((x-xx)*25.0), -yy-((y-yy)*25.0), -zz-((z-zz)*2
             }
             moveCloud();
          }
+      } else {
+         if (currentTime - meshTime >= 400.00) {
+            meshTime = currentTime;
+            for (int i = 0; i < 9; i++) {
+               currentObj[i].x += 0.8;
+               if (currentObj[i].x >= roomLocation[1][i + 1] - 3) {
+                  currentObj[i].x = roomLocation[0][i + 1] + 8;
+               }
+               setTranslateMesh(currentObj[i].id, currentObj[i].x, currentObj[i].y, currentObj[i].z);
+            }
+         }
       }
 
 
       getOldViewPosition(&x, &y, &z);
       if (world[(int)x * -1][((int)y * -1) - 1][(int)z * -1] == 5) { // stair to go up
+
+         for (int i = 0; i < 9; i++) { // leveing current level / hide all the mesh obj
+            printf("Hiding obj id: %d\n\n", currentObj[i].id);
+            hideMesh(currentObj[i].id);
+         }
+
          saveLevel(&head, currentLevel); // save the current level
          currentLevel -= 1;
          loadLevel(&head, currentLevel); // get the next level
+
+         for (int i = 0; i < 9; i++) { // leveing current level / hide all the mesh obj
+            printf("showing obj id: %d\n", currentObj[i].id);
+            drawMesh(currentObj[i].id);
+         }
       }
 
       if (world[(int)x * -1][((int)y * -1) - 1][(int)z * -1] == 9) { // stair to go down
+         for (int i = 0; i < 9; i++) { // leveing current level / hide all the mesh obj
+            printf("Hiding obj id: %d\n\n", currentObj[i].id);
+            hideMesh(currentObj[i].id);
+         }
          saveLevel(&head, currentLevel); // save the current level
          currentLevel += 1;
          loadLevel(&head, currentLevel); // get the next level
+         for (int i = 0; i < 9; i++) { // leveing current level / hide all the mesh obj
+            printf("showing obj id: %d\n\n", currentObj[i].id);
+            drawMesh(currentObj[i].id);
+         }
       }
    }
 }
-
 
 	/* called by GLUT when a mouse button is pressed or released */
 	/* -button indicates which button was pressed or released */
@@ -375,7 +481,7 @@ void mouse(int button, int state, int x, int y) {
 }
 
 int main(int argc, char** argv) {
-   int i, j, k;
+  int i, j, k;
 	/* initialize the graphics system */
    graphicsInit(&argc, argv);
 
@@ -429,11 +535,98 @@ int main(int argc, char** argv) {
 
 	/* create sample player */
       createPlayer(0, 52.0, 27.0, 52.0, 0.0);
+
+	/* texture examples */
+
+	/* create textured cube */
+	/* create user defined colour with an id number of 11 */
+      setUserColour(11, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+	/* attach texture 22 to colour id 11 */
+      setAssignedTexture(11, 22);
+	/* place a cube in the world using colour id 11 which is texture 22 */
+      world[59][25][50] = 11;
+
+	/* create textured cube */
+      setUserColour(12, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+      setAssignedTexture(12, 27);
+      world[61][25][50] = 12;
+
+	/* create textured cube */
+      setUserColour(10, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+      setAssignedTexture(10, 26);
+      world[63][25][50] = 10;
+
+	/* create textured floor */
+      setUserColour(13, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+      setAssignedTexture(13, 8);
+      for (i=57; i<67; i++)
+         for (j=45; j<55; j++)
+            world[i][24][j] = 13;
+
+	/* create textured wall */
+      setUserColour(14, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+      setAssignedTexture(14, 18);
+      for (i=57; i<67; i++)
+         for (j=0; j<4; j++)
+            world[i][24+j][45] = 14;
+
+	/* create textured wall */
+      setUserColour(15, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+      setAssignedTexture(15, 42);
+      for (i=45; i<55; i++)
+         for (j=0; j<4; j++)
+            world[57][24+j][i] = 15;
+
+		// two cubes using the same texture but one is offset
+		// cube with offset texture 33
+      setUserColour(16, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+      setAssignedTexture(16, 33);
+      world[65][25][50] = 16;
+      setTextureOffset(16, 0.5, 0.5);
+		// cube with non-offset texture 33
+      setUserColour(17, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+      setAssignedTexture(17, 33);
+      world[66][25][50] = 17;
+
+		// create some lava textures that will be animated
+      setUserColour(18, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+      setAssignedTexture(18, 24);
+      world[62][24][55] = 18;
+      world[63][24][55] = 18;
+      world[64][24][55] = 18;
+      world[62][24][56] = 18;
+      world[63][24][56] = 18;
+      world[64][24][56] = 18;
+
+		// draw cow mesh and rotate 45 degrees around the y axis
+		// game id = 0, cow mesh id == 0
+      setMeshID(0, 0, 48.0, 26.0, 50.0);
+      setRotateMesh(0, 0.0, 45.0, 0.0);
+
+		// draw fish mesh and scale to half size (0.5)
+		// game id = 1, fish mesh id == 1
+      setMeshID(1, 1, 51.0, 28.0, 50.0);
+      setScaleMesh(1, 0.5);
+
+		// draw cow mesh and rotate 45 degrees around the y axis
+		// game id = 2, cow mesh id == 0
+      setMeshID(2, 0, 59.0, 26.0, 47.0);
+
+		// draw bat
+		// game id = 3, bat mesh id == 2
+      setMeshID(3, 2, 61.0, 26.0, 47.0);
+      setScaleMesh(3, 0.5);
+		// draw cactus
+		// game id = 4, cactus mesh id == 3
+      setMeshID(4, 3, 63.0, 26.0, 47.0);
+      setScaleMesh(4, 0.5);
    } else {          
       /* my world starts here */
       /* make some cousmise colors */
       //printf("%f\n", rValue);
+      displayMap = 0;
       setCoustmizeColor();
+      setCustmizeTexture();
       buildOutDoorWorld(0);
       makeClouds();
    }
@@ -485,10 +678,14 @@ void loadLevel(struct Node** head, int level) {
             }
          }
       }
+
+      for (int i = 0; i < 9; i++) {
+         currentObj[i] = targetNode->allMeshObjs[i];
+      }
       setViewPosition((int)targetNode->spawnXInedx * -1, (int)targetNode->spawnYIndex * -1-0.2, (int)targetNode->spawnZIndex * -1);
    } else {
       printf("Build world...\n\n");
-      buildWorld();
+      buildWorld(level);
    }
 }
 
@@ -508,6 +705,16 @@ void gravity() {
    }
 }
 
+int getScreenHeight() {
+   glGetIntegerv(GL_VIEWPORT, m_viewport);
+   return m_viewport[3];
+}
+
+int getScreenWeight() {
+   glGetIntegerv(GL_VIEWPORT, m_viewport);
+   return m_viewport[2];
+}
+
 /***********Healper functions(LinkedList)***********/
 void appendLinkedList(struct Node **headReference, int level, GLubyte toBeSaved[WORLDX][WORLDY][WORLDZ]) {
    struct Node *newNode = (struct Node*)malloc(sizeof(struct Node));
@@ -516,6 +723,14 @@ void appendLinkedList(struct Node **headReference, int level, GLubyte toBeSaved[
    newNode->spawnXInedx = spawnLocation[0];
    newNode->spawnYIndex = spawnLocation[1];
    newNode->spawnZIndex = spawnLocation[2];
+
+   for (int i = 0; i < 9; i++) {
+      newNode->allMeshObjs[i].id = currentObj[i].id; 
+      newNode->allMeshObjs[i].item = currentObj[i].item;
+      newNode->allMeshObjs[i].x = currentObj[i].x;
+      newNode->allMeshObjs[i].y = currentObj[i].y;
+      newNode->allMeshObjs[i].z = currentObj[i].z;
+   }
 
    for (int i = 0; i < WORLDX; i++) {
       for (int j = 0; j < WORLDY; j++) {

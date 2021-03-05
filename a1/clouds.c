@@ -58,6 +58,14 @@ void drawCloud (int radius, int xCenter, int zCenter) {
                   newZ -= WORLDZ;
                }
 
+               if (newX < 0) {
+                  newX = newX * -1;
+               }
+
+               if (newZ < 0) {
+                  newZ = newZ * -1;
+               }
+
                world[newX][48][newZ] = 30;
             }
          }
