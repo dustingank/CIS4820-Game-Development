@@ -45,6 +45,12 @@ void setCoustmizeColor() {
 
    setUserColour(19, colorCodeConvert(60), colorCodeConvert(60), colorCodeConvert(60), 1.00, 
                         colorCodeConvert(60 / 2), colorCodeConvert(60 / 2), colorCodeConvert(60 / 2), 1.00); // dark grey color for the wall and ceiling
+
+   setUserColour(20, colorCodeConvert(244), colorCodeConvert(244), colorCodeConvert(244), 1.00, 
+                        colorCodeConvert(244 / 2), colorCodeConvert(244 / 2), colorCodeConvert(244 / 2), 0.50); // another white
+   setUserColour(21, colorCodeConvert(244), colorCodeConvert(244), colorCodeConvert(244), 1.00, 
+                        colorCodeConvert(244 / 2), colorCodeConvert(244 / 2), colorCodeConvert(244 / 2), 0.50); // another white
+      
 }
 
 void setCustmizeTexture() {
@@ -59,6 +65,9 @@ void setCustmizeTexture() {
 
    setAssignedTexture(18, 42);
    setAssignedTexture(19, 21);
+
+   setAssignedTexture(20,46); // room floor
+   setAssignedTexture(21,47); // hallway floor
 }
 
 void create3Dmesh(){
