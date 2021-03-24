@@ -782,13 +782,14 @@ void buildWorld(int level) {
    generateRoom(69,99,69,99, 9); // index {2, 2}
 
    int starting = 1 + (currentLevel - 2) * 9;
+
    for (int i = 0; i < 9; i++) {
       int x = roomLocation[0][i] + 8;
       int z = roomLocation[2][i] + 9;
       int item = randomNumber(0,3);
       
       currentObj[i].id = starting + i;
-      currentObj[i].item = item;
+      currentObj[i].item = 3;
       currentObj[i].visability = 0;
       currentObj[i].x = (float)x;
       currentObj[i].y = 25.3;

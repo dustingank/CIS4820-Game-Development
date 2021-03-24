@@ -8,6 +8,7 @@ struct mesh {
    float x;
    float y;
    float z;
+   int isAlive;
 };
 
 struct mesh currentObj[9];

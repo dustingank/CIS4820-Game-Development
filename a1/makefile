@@ -48,6 +48,6 @@ LIBS = -F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/De
 # on your distribution.
 #LIBS = -lGL -lGLU -lglut -lm -D__LINUX__
 
-a1: a1.c graphics.c visible.c terrain.c paramater.c gameWorldGenerate.c clouds.c mesh.c graphics.h terrain.h paramater.h gameWorldGenerate.h clouds.h mesh.h fast_obj.h
-	gcc a1.c graphics.c visible.c terrain.c paramater.c gameWorldGenerate.c clouds.c mesh.c -o a1 $(LIBS)
+a1: a1.c graphics.c visible.c terrain.c paramater.c gameWorldGenerate.c clouds.c mesh.c aiStrategy.c aiStrategy.h graphics.h terrain.h paramater.h gameWorldGenerate.h clouds.h mesh.h fast_obj.h
+	gcc a1.c graphics.c visible.c terrain.c paramater.c gameWorldGenerate.c clouds.c mesh.c aiStrategy.c -o a1 $(LIBS)
 

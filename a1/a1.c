@@ -18,6 +18,7 @@
 #include "terrain.h"
 #include "gameWorldGenerate.h"
 #include "clouds.h"
+#include "aiStrategy.h"
 
 extern GLubyte  world[WORLDX][WORLDY][WORLDZ];
 int currentLevel = 1; // to track which level player current is
@@ -37,6 +38,11 @@ struct Node {
 };
 struct Node *head = NULL;
 
+int currentX = 0;
+int currentY = 0;
+int currentZ = 0;
+int userTurn = 0;
+int meshTurn = 0;
 // function declarations start here
 
 	/* mouse function called by GLUT when a button is pressed or released */
@@ -166,8 +172,7 @@ void collisionResponse() {
   
    getViewPosition(&x, &y, &z);
    getOldViewPosition(&oldX, &oldY, &oldZ);
-   
-
+    
    //checking the x heading and setting the buffer
    if((x-oldX) > 0){ 
       x = x + 0.12;
@@ -195,9 +200,7 @@ void collisionResponse() {
          setViewPosition(oldX, oldY, oldZ);
       }
    }
-   
 }
-
 
 	/******* draw2D() *******/
 	/* draws 2D shapes on screen */
@@ -455,9 +458,10 @@ void draw2D() {
 	/*  system is running */
 	/* -gravity must also implemented here, duplicate collisionResponse */
 void update() {
-int i, j, k;
-float *la;
-float x, y, z;
+   int i, j, k;
+   float *la;
+   float x, y, z;
+   int x_int, y_int, z_int;
 
 	/* sample animation for the testworld, don't remove this code */
 	/* demo of animating mobs */
@@ -629,16 +633,35 @@ createTube(2, -xx, -yy, -zz, -xx-((x-xx)*25.0), -yy-((y-yy)*25.0), -zz-((z-zz)*2
                   }
                }
 
-               currentObj[i].x += 0.05;
-               if (currentObj[i].x >= roomLocation[1][i] - 1) {
-                  currentObj[i].x = roomLocation[0][i] + 1;
-               }
-               setTranslateMesh(currentObj[i].id, currentObj[i].x, currentObj[i].y, currentObj[i].z);
+               //currentObj[i].x += 0.05;
+               //if (currentObj[i].x >= roomLocation[1][i] - 1) {
+               //   currentObj[i].x = roomLocation[0][i] + 1;
+               //}
+               //setTranslateMesh(currentObj[i].id, currentObj[i].x, currentObj[i].y, currentObj[i].z);
             }
          }
       }
-
       getOldViewPosition(&x, &y, &z);
+
+      x_int = (int)x * -1;
+      y_int = (int)y * -1;
+      z_int = (int)z * -1;
+
+      if ((x_int != currentX) || (y_int != currentY) || (z_int != currentZ)) {
+         currentX = x_int;
+         currentY = y_int;
+         currentZ = z_int;
+         
+         userTurn = 0;
+         meshTurn = 1;
+      }
+
+      if (meshTurn) {
+         printf("mesh move\n");
+         meshTurn = 0;
+      }
+
+      
       if (world[(int)x * -1][((int)y * -1) - 1][(int)z * -1] == 5) { // stair to go up
 
          if (currentLevel != 1) {

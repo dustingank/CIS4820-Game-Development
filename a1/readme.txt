@@ -332,7 +332,7 @@ void  draw2Dbox(int x1, int y1, int x2, int y2);
 -Draw a box with the lower left corner at (x1, y1) and the upper right
  corner at (x2, y2).
 
-void  draw2Dtriangle(int x1, int y1, int x2, int y2, int x3, int y3);
+void (int x1, int y1, int x2, int y2, int x3, int y3);
 -Draw a triangle with the coordinates of it's three vertices at (x1,y1),
  (x2,y2), and (x3,y3).
 
