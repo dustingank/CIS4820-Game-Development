@@ -108,11 +108,12 @@ void buildOutDoorWorld(int offset){
 
    for (int i = 0; i < 9; i++) {
       
-      currentObj[i].id = 0;
-      currentObj[i].item = 0;
-      currentObj[i].x = 0;
-      currentObj[i].y = 0;
-      currentObj[i].z = 0;
+      currentMonsterObj[i].id = 0;
+      currentMonsterObj[i].item = 0;
+      currentMonsterObj[i].x = 0;
+      currentMonsterObj[i].y = 0;
+      currentMonsterObj[i].z = 0;
+      currentMonsterObj[i].isAlive = 0;
 
       roomLocation[0][i] = 0;
       roomLocation[1][i] = 0;
@@ -448,19 +449,11 @@ void generateRoom(int minWidth, int maxWidth, int minLength, int maxLength, int 
          centerDoorTop = randomNumber(startX + 3, endX - 3);
          centerDoorLeft = randomNumber(startZ + 3, endZ - 3);
          
-         //printf("here\n");
-         //cubeLocX = randomNumber(startX + 5, endX / 2);
-         //cubeLocZ = randomNumber(startZ + 5, endZ / 2);
          // a randomCube in side the room
          world[startX + 5][25][startZ + 5] = 5;
          
-         //printf("here1\n");
-         //cubeLocX = randomNumber(startX + 15, endX);
-         //cubeLocZ = randomNumber(startZ + 15, endZ);
          world[endX - 5][25][endZ - 5] = 9;
 
-         //printf("here2\n");
-         
          spawnX = randomNumber(startX + 3, endX - 3);
          spawnZ = randomNumber(startZ + 3, endZ - 3);
          spawnLocation[0] = endX - 2;
@@ -760,47 +753,136 @@ void buildWorld(int level) {
          }
       }
    }
-   
-   srand(time(NULL));
    /* a platform*/
    for (i = 0; i < WORLDX; i++) {
       for (j = 0; j < WORLDZ; j++) {
          world[i][24][j] = randomNumber(10,12);
       }
    }
+   int starting = 1 + (currentLevel - 2) * 10;
 
-   generateRoom(0,33,0,33, 1); // index {0, 0}
-   generateRoom(34,67,0,33, 2); // index {0, 1}
-   generateRoom(68,99,0,33, 3); // index {0, 2}
-
-   generateRoom(0,33,34,67, 4); // index {0, 1}
-   generateRoom(34,67,34,67, 5); // index {1, 1}
-   generateRoom(68,99,34,67, 6); // index {1, 2}
-
-   generateRoom(0,33,68,99, 7); // index {0, 2}
-   generateRoom(34,67,68,99, 8); // index {1, 2}
-   generateRoom(69,99,69,99, 9); // index {2, 2}
-
-   int starting = 1 + (currentLevel - 2) * 9;
-
-   for (int i = 0; i < 9; i++) {
-      int x = roomLocation[0][i] + 8;
-      int z = roomLocation[2][i] + 9;
-      int item = randomNumber(0,3);
+   if (level % 2 != 0) {
+      buildCaveLevel();
+      for (int i = 0; i < 9; i++) {
       
-      currentObj[i].id = starting + i;
-      currentObj[i].item = 3;
-      currentObj[i].visability = 0;
-      currentObj[i].x = (float)x;
-      currentObj[i].y = 25.3;
-      currentObj[i].z = (float)z;
-      setMeshID(currentObj[i].id, currentObj[i].item, currentObj[i].x, currentObj[i].y, currentObj[i].z);
-      setScaleMesh(currentObj[i].id, 0.4);
+         currentMonsterObj[i].id = 0;
+         currentMonsterObj[i].item = 0;
+         currentMonsterObj[i].x = 0;
+         currentMonsterObj[i].y = 0;
+         currentMonsterObj[i].z = 0;
+         currentMonsterObj[i].isAlive = 0;
 
-      roomLocation[4][i] = 0; // make sure none of the room been visited
+         roomLocation[0][i] = 0;
+         roomLocation[1][i] = 0;
+         roomLocation[2][i] = 0;
+         roomLocation[3][i] = 0;
+         roomLocation[4][i] = 0;
+      }
+
+      currentMonsterObj[0].id = starting;
+      currentMonsterObj[0].item = 3;
+      currentMonsterObj[0].visability = 0;
+      currentMonsterObj[0].x = 54;
+      currentMonsterObj[0].y = 25.3;
+      currentMonsterObj[0].z = 50;
+      currentMonsterObj[0].isAlive = 1;
+      setMeshID(currentMonsterObj[0].id, currentMonsterObj[0].item, currentMonsterObj[0].x, currentMonsterObj[0].y, currentMonsterObj[0].z);
+      setScaleMesh(currentMonsterObj[0].id, 0.4);
+      
+      currentItemObj[0].id = starting + 1;
+      currentItemObj[0].item = 8;
+      currentItemObj[0].visability = 0;
+      currentItemObj[0].x = 46;
+      currentItemObj[0].y = 25;
+      currentItemObj[0].z = 46;
+      currentItemObj[0].isAlive = 1;
+      //printf("2\n");
+      setMeshID(currentItemObj[0].id, currentItemObj[0].item, currentItemObj[0].x, currentItemObj[0].y, currentItemObj[0].z);
+      setScaleMesh(currentItemObj[0].id, 1);
+      //printf("All mesh object done\n");
+
+
+   } else {
+      srand(time(NULL));
+      generateRoom(0,33,0,33, 1); // index {0, 0}
+      generateRoom(34,67,0,33, 2); // index {0, 1}
+      generateRoom(68,99,0,33, 3); // index {0, 2}
+
+      generateRoom(0,33,34,67, 4); // index {0, 1}
+      generateRoom(34,67,34,67, 5); // index {1, 1}
+      generateRoom(68,99,34,67, 6); // index {1, 2}
+
+      generateRoom(0,33,68,99, 7); // index {0, 2}
+      generateRoom(34,67,68,99, 8); // index {1, 2}
+      generateRoom(69,99,69,99, 9); // index {2, 2}
+      //printf("All room generate done\n");
+
+      for (int i = 0; i < 9; i++) {
+         int x = roomLocation[0][i] + 8;
+         int z = roomLocation[2][i] + 9;
+         int item = randomNumber(0,3);
+         
+         currentMonsterObj[i].id = starting + i;
+         if (i == 8) {
+            currentMonsterObj[i].item = 3;
+         } else {
+            currentMonsterObj[i].item = randomNumber(1, 3);
+         }
+         currentMonsterObj[i].visability = 0;
+         currentMonsterObj[i].x = (float)x;
+         currentMonsterObj[i].y = 25.3;
+         currentMonsterObj[i].z = (float)z;
+         currentMonsterObj[i].isAlive = 1;
+         setMeshID(currentMonsterObj[i].id, currentMonsterObj[i].item, currentMonsterObj[i].x, currentMonsterObj[i].y, currentMonsterObj[i].z);
+         setScaleMesh(currentMonsterObj[i].id, 0.4);
+         roomLocation[4][i] = 0; // make sure none of the room been visited
+      }
+
+      //printf("All monster done\n");
+
+      int roomID = randomNumber(0,5);
+      int spawnXindex = roomLocation[0][roomID] + 3;
+      int spawnZindex = roomLocation[2][roomID] + 3;
+      //printf("1\n");
+      currentItemObj[0].id = starting + 9;
+      currentItemObj[0].item = 8;
+      currentItemObj[0].visability = 0;
+      currentItemObj[0].x = (float)spawnXindex;
+      currentItemObj[0].y = 25;
+      currentItemObj[0].z = (float)spawnZindex;
+      currentItemObj[0].isAlive = 1;
+      //printf("2\n");
+      setMeshID(currentItemObj[0].id, currentItemObj[0].item, currentItemObj[0].x, currentItemObj[0].y, currentItemObj[0].z);
+      setScaleMesh(currentItemObj[0].id, 1);
+      //printf("All mesh object done\n");
+
+      buildCorridor();
+      spawnLocation[1] = 25;
+      setViewPosition((spawnLocation[0] * -1),-25- 0.2,(spawnLocation[2] * -1));
    }
+}
 
-   buildCorridor();
+void buildCaveLevel(){
+   for (int i = 0; i < WORLDX; i++) {
+      for (int j = 0; j< WORLDZ; j++) {
+         float x_float = ((float)i - 50) / 50;
+         float z_float = ((float)j - 50) / 50; 
+         float y_float = 1.0 - ((float)(x_float * x_float + z_float * z_float) / 2.0);
+         int y = (y_float) * 20 + 25;
+         world[i][y][j] = 19;
+
+         if (i == 0 || j == 0 || i == 99 || j == 99) {
+            for (int a = 25; a < 45; a++) {
+               world[i][a][j] = 19;
+            }
+         }
+      }
+   }
+   world[24][25][30] = 5;
+   world[40][25][70] = 9;
+
    spawnLocation[1] = 25;
-   setViewPosition((spawnLocation[0] * -1),-25- 0.2,(spawnLocation[2] * -1));
+   spawnLocation[0] = 25;
+   spawnLocation[2] = 35;
+   setViewPosition((spawnLocation[0] * -1),-25-0.2,(spawnLocation[2] * -1));
 }

@@ -33,7 +33,9 @@ struct Node {
    int spawnYIndex;
    int roomLocation[5][9];
    GLubyte  worldSaved[WORLDX][WORLDY][WORLDZ];
-   struct mesh allMeshObjs[9];
+   struct mesh allMeshMonster[9];
+   struct mesh allMeshItems[5];
+   int isKeyFound;
    struct Node *next;
 };
 struct Node *head = NULL;
@@ -42,7 +44,8 @@ int currentX = 0;
 int currentY = 0;
 int currentZ = 0;
 int userTurn = 0;
-int meshTurn = 0;
+int meshTurn = 1;
+int isKeyFoundCurrentLevel = 0;
 // function declarations start here
 
 	/* mouse function called by GLUT when a button is pressed or released */
@@ -168,36 +171,49 @@ void collisionResponse() {
    /* your code for collisions goes here */
    float x, y, z;
    float oldX,oldY,oldZ;
+   int futureX, futureY, futureZ;
    int currentX, currentY, currentZ;
-  
+
    getViewPosition(&x, &y, &z);
    getOldViewPosition(&oldX, &oldY, &oldZ);
     
    //checking the x heading and setting the buffer
    if((x-oldX) > 0){ 
-      x = x + 0.12;
+      x = x + 0.09;
    } else if((x-oldX) < 0){
-      x = x - 0.12;
+      x = x - 0.09;
    }
 
    //checking the y heading and setting the buffer
    if((z-oldZ) > 0){ 
-      z = z + 0.12; 
+      z = z + 0.09; 
    } else if((z-oldZ) < 0){
-      z = z - 0.12;
+      z = z - 0.09;
    }   
 
-   currentX = x * -1;
-   currentY = y * -1;
-   currentZ = z * -1;
+   futureX = x * -1;
+   futureY = y * -1;
+   futureZ = z * -1;
+
+   currentX = oldX * -1;
+   currentY = oldY * -1;
+   currentZ = oldZ * -1;
    
-   
-      
-   if(world[currentX][currentY][currentZ] != 0){
-      if(world[currentX][currentY+1][currentZ] == 0){
+   if(world[futureX][futureY][futureZ] != 0){
+      if(world[futureX][futureY+1][futureZ] == 0){
          setViewPosition(x,y-1,z);
       } else{
-         setViewPosition(oldX, oldY, oldZ);
+         if (currentX != futureX && world[currentX][currentY][futureZ] == 0) {
+            getViewPosition(&x, &y, &z);
+            getOldViewPosition(&oldX, &oldY, &oldZ);
+            setViewPosition(oldX, oldY, z);
+         } else if (currentZ != futureZ && world[futureX][currentY][currentZ] == 0) {
+            getViewPosition(&x, &y, &z);
+            getOldViewPosition(&oldX, &oldY, &oldZ);
+            setViewPosition(x, oldY, oldZ);
+         } else {
+            setViewPosition(oldX, oldY, oldZ);
+         }
       }
    }
 }
@@ -228,7 +244,8 @@ void draw2D() {
       GLfloat white[] = {1.0, 1.0, 1.0, 1.0};
       GLfloat red[] = {0.7, 0.15, 0.15, 0.95};
       GLfloat green[] = {0.0, 0.5, 0.0, 0.5};
-      GLfloat brown[] = {0.65, 0.16, 0.16, 1.0};
+      GLfloat blue[] = {colorCodeConvert(5), colorCodeConvert(124), colorCodeConvert(187), 1.0};
+      GLfloat pink[] = {colorCodeConvert(243), colorCodeConvert(11), colorCodeConvert(239), 1.0};
 
       screenHeight = getScreenHeight();
       screenWidth = getScreenWeight();
@@ -238,6 +255,20 @@ void draw2D() {
       getViewPosition(&x, &y, &z);
       x = x * -1;
       z = z * -1;
+
+               // displaying the key
+      if (isKeyFoundCurrentLevel == 1) {
+         int mapSize = ((screenWidth / 3) / WORLDX) * WORLDX;
+         int blockSize = mapSize / WORLDX;
+         int offsetWidth = (screenWidth - mapSize) - (mapSize / 10) + (blockSize * 80);
+         int offsetHeigh = screenHeight - (mapSize / 10);
+         
+         set2Dcolour(red);
+         draw2Dbox(offsetWidth,70, offsetWidth + 40, 110);
+         draw2Dbox(offsetWidth + 15, 70, offsetWidth + 25, 170);
+         draw2Dbox(offsetWidth + 15, 140, offsetWidth + 15 - 20, 130);
+         draw2Dbox(offsetWidth + 15, 160, offsetWidth + 15 - 20, 150);
+      }
       
 
       for(int i = 0; i < 9; i++) {
@@ -268,56 +299,6 @@ void draw2D() {
          getViewOrientation(&mvx, &mvy, &mvz);
          //printf("My current Location: (%.1f, %.1f)\n", currentX * -1, currentZ * -1);
 
-         // get the most left index: 
-         roty = (mvy / 180.0 * 3.141592);
-         tempX = currentX;
-         tempZ = currentZ;
-         tempX += cos(roty) * 15;
-         tempZ += sin(roty) * 15;
-
-         mostLeftX = tempX * -1;
-         mostLeftZ = tempZ * -1;
-
-         rotx = (mvx / 180.0 * 3.141592);
-         roty = (mvy / 180.0 * 3.141592);
-
-         tempX -= sin(roty) * 30;
-         tempZ += cos(roty) * 30;
-         
-         leftRangeX = -1 * tempX;
-         leftRangeZ = -1 * tempZ;
-
-         // now we get the most right
-         roty = (mvy / 180.0 * 3.141592);
-         tempX = currentX;
-         tempZ = currentZ;
-         tempX -= cos(roty) * 15;
-         tempZ -= sin(roty) * 15;
-
-         mostRightX = tempX * -1;
-         mostRightZ = tempZ * -1;
-
-         rotx = (mvx / 180.0 * 3.141592);
-         roty = (mvy / 180.0 * 3.141592);
-
-         tempX -= sin(roty) * 30;
-         tempZ += cos(roty) * 30;
-
-         rightRangeX = -1 * tempX;
-         rightRnageZ = -1 * tempZ;
-         set2Dcolour(red);
-         draw2Dbox(offsetWidth + (blockSize * mostLeftX), offsetHeigh - (blockSize * mostLeftZ),
-                  offsetWidth + (blockSize * mostLeftX) + blockSize, offsetHeigh - (blockSize * mostLeftZ) + blockSize);
-
-         draw2Dbox(offsetWidth + (blockSize * leftRangeX), offsetHeigh - (blockSize * leftRangeZ),
-                  offsetWidth + (blockSize * leftRangeX) + blockSize, offsetHeigh - (blockSize * leftRangeZ) + blockSize);
-
-         draw2Dbox(offsetWidth + (blockSize * mostRightX), offsetHeigh - (blockSize * mostRightZ),
-                  offsetWidth + (blockSize * mostRightX) + blockSize, offsetHeigh - (blockSize * mostRightZ) + blockSize);
-
-         draw2Dbox(offsetWidth + (blockSize * rightRangeX), offsetHeigh - (blockSize * rightRnageZ),
-                  offsetWidth + (blockSize * rightRangeX) + blockSize, offsetHeigh - (blockSize * rightRnageZ) + blockSize);
-
 
          set2Dcolour(red);
          draw2Dtriangle(offsetWidth + (blockSize * (int)x) - blockSize * 1.3, offsetHeigh - (blockSize * (int)z),
@@ -325,12 +306,37 @@ void draw2D() {
                      offsetWidth + (blockSize * (int)x), offsetHeigh - (blockSize * (int)z) + blockSize * 1.3);
          
          for (int i = 0; i < 9; i++) {
-            int meshX = currentObj[i].x;
-            int meshZ = currentObj[i].z;
-            set2Dcolour(green);
+            int meshX = currentMonsterObj[i].x;
+            int meshZ = currentMonsterObj[i].z;
+            if (currentMonsterObj[i].item == 1) {
+               set2Dcolour(blue);
+            } else if (currentMonsterObj[i].item == 2) {
+               set2Dcolour(pink);
+            } else if (currentMonsterObj[i].item == 3) {
+               set2Dcolour(green);
+            }
             //printf("%d, %d\n", meshX, meshZ);
-            draw2Dbox(offsetWidth + (blockSize * meshX), offsetHeigh - (blockSize * meshZ),
+            if (currentMonsterObj[i].isAlive) {
+               draw2Dbox(offsetWidth + (blockSize * meshX), offsetHeigh - (blockSize * meshZ),
                   offsetWidth + (blockSize * meshX) + blockSize, offsetHeigh - (blockSize * meshZ) + blockSize);
+            }
+         }
+
+         int itemX = currentItemObj[0].x;
+         int itemZ = currentItemObj[0].z;
+         if (currentItemObj[0].isAlive) {
+            set2Dcolour(red);
+            draw2Dline(offsetWidth + (blockSize * itemX), offsetHeigh - (blockSize * itemZ), 
+                     offsetWidth + (blockSize * itemX) + blockSize, offsetHeigh - (blockSize * itemZ) + blockSize, blockSize);
+
+            draw2Dline(offsetWidth + (blockSize * itemX), offsetHeigh - (blockSize * itemZ), 
+                  offsetWidth + (blockSize * itemX) - blockSize, offsetHeigh - (blockSize * itemZ) - blockSize, blockSize);
+
+            draw2Dline(offsetWidth + (blockSize * itemX), offsetHeigh - (blockSize * itemZ), 
+                  offsetWidth + (blockSize * itemX) + blockSize, offsetHeigh - (blockSize * itemZ) - blockSize, blockSize);
+
+            draw2Dline(offsetWidth + (blockSize * itemX), offsetHeigh - (blockSize * itemZ), 
+                  offsetWidth + (blockSize * itemX) - blockSize, offsetHeigh - (blockSize * itemZ) + blockSize, blockSize);
          }
 
          for (int i = 0; i <= WORLDX; i++) {
@@ -382,12 +388,19 @@ void draw2D() {
 
          for (int a = 0; a < 9; a++) {
             if (roomLocation[4][a] == 1) {
-               int meshX = currentObj[a].x;
-               int meshZ = currentObj[a].z;
-               set2Dcolour(green);
-               //printf("%d, %d\n", meshX, meshZ);
-               draw2Dbox(offsetWidth + (blockSize * meshX), offsetHeigh - (blockSize * meshZ),
+               int meshX = currentMonsterObj[a].x;
+               int meshZ = currentMonsterObj[a].z;
+               if (currentMonsterObj[a].item == 1) {
+                  set2Dcolour(blue);
+               } else if (currentMonsterObj[a].item == 2) {
+                  set2Dcolour(pink);
+               } else if (currentMonsterObj[a].item == 3) {
+                  set2Dcolour(green);
+               }
+               if (currentMonsterObj[a].isAlive) {
+                  draw2Dbox(offsetWidth + (blockSize * meshX), offsetHeigh - (blockSize * meshZ),
                      offsetWidth + (blockSize * meshX) + blockSize, offsetHeigh - (blockSize * meshZ) + blockSize);
+               }
 
                for (int i = roomLocation[0][a]; i <= roomLocation[1][a]; i++) {
                   for (int j = roomLocation[2][a]; j <= roomLocation[3][a]; j++) {
@@ -423,7 +436,6 @@ void draw2D() {
          int blockSize = mapSize / WORLDX;
          int offsetWidth = (screenWidth - mapSize) - (mapSize / 10);
          int offsetHeigh = screenHeight - (mapSize / 10);
-
          for(int i = 0; i < WORLDX; i++) {
             for (int j = 0; j < WORLDY; j++) {
                for (int k = 0; k < WORLDZ; k++) {
@@ -447,6 +459,7 @@ void draw2D() {
                         offsetWidth + (blockSize * i) + blockSize, offsetHeigh - (blockSize * j) + blockSize);
             }
          }
+
       }
    }
 }
@@ -603,101 +616,105 @@ createTube(2, -xx, -yy, -zz, -xx-((x-xx)*25.0), -yy-((y-yy)*25.0), -zz-((z-zz)*2
             meshTime = currentTime;
 
             for (int i = 0; i < 9; i++) {
-               if (pointInFrustum(currentObj[i].x, currentObj[i].y, currentObj[i].z)) {
-                  if (currentObj[i].visability == 0) {
-                     if (currentObj[i].item == 0) {
-                        printf("\nCow Mesh #%d is visiblie\n", currentObj[i].id);
-                     } else if (currentObj[i].item == 1) {
-                        printf("\nFish Mesh #%d is visiblie\n", currentObj[i].id);
-                     } else if (currentObj[i].item == 2) {
-                        printf("\nBat Mesh #%d is visiblie\n", currentObj[i].id);
-                     } else if (currentObj[i].item == 3) {
-                        printf("\nCactus Mesh #%d is visiblie\n",currentObj[i].id);
+               if (currentMonsterObj[i].isAlive == 1) {
+                  if (pointInFrustum(currentMonsterObj[i].x, currentMonsterObj[i].y, currentMonsterObj[i].z)) {
+                     if (currentMonsterObj[i].visability == 0) {
+                        currentMonsterObj[i].visability = 1;
+                        drawMesh(currentMonsterObj[i].id);
                      }
-                     currentObj[i].visability = 1;
-                     drawMesh(currentObj[i].id);
-                  }
-               } else {
-                  if (currentObj[i].visability == 1) {
-                     if (currentObj[i].item == 0) {
-                        printf("\nCow Mesh #%d is not visiblie\n", currentObj[i].id);
-                     } else if (currentObj[i].item == 1) {
-                        printf("\nFish Mesh #%d is not visiblie\n", currentObj[i].id);
-                     } else if (currentObj[i].item == 2) {
-                        printf("\nBat Mesh #%d is not visiblie\n", currentObj[i].id);
-                     } else if (currentObj[i].item == 3) {
-                        printf("\nCactus Mesh #%d is not visiblie\n", currentObj[i].id);
+                  } else {
+                     if (currentMonsterObj[i].visability == 1) {
+                        currentMonsterObj[i].visability = 0;
+                        hideMesh(currentMonsterObj[i].id);
                      }
-                     currentObj[i].visability = 0;
-                     hideMesh(currentObj[i].id);
                   }
                }
-
-               //currentObj[i].x += 0.05;
-               //if (currentObj[i].x >= roomLocation[1][i] - 1) {
-               //   currentObj[i].x = roomLocation[0][i] + 1;
-               //}
-               //setTranslateMesh(currentObj[i].id, currentObj[i].x, currentObj[i].y, currentObj[i].z);
+               
+               if (currentMonsterObj[i].item != 3) {
+                  currentMonsterObj[i].x += 0.05;
+                  if (currentMonsterObj[i].x >= roomLocation[1][i] - 1) {
+                     currentMonsterObj[i].x = roomLocation[0][i] + 1;
+                  }
+                  setTranslateMesh(currentMonsterObj[i].id, currentMonsterObj[i].x, currentMonsterObj[i].y, currentMonsterObj[i].z);
+               }
             }
          }
+
+         getOldViewPosition(&x, &y, &z);
+         x_int = (int)x * -1;
+         y_int = (int)y * -1;
+         z_int = (int)z * -1;
+
+         if ((x_int != currentX) || (y_int != currentY) || (z_int != currentZ) && userTurn == 1) {
+            currentX = x_int;
+            currentY = y_int;
+            currentZ = z_int;
+            //printf("user move\n");
+            meshTurn = 1;
+            userTurn = 0;
+         }
+
+         if (meshTurn) {
+            aiStatus();
+            //printf("mesh move\n\n");
+            meshTurn = 0;
+            userTurn = 1;
+         }
       }
-      getOldViewPosition(&x, &y, &z);
-
-      x_int = (int)x * -1;
-      y_int = (int)y * -1;
-      z_int = (int)z * -1;
-
-      if ((x_int != currentX) || (y_int != currentY) || (z_int != currentZ)) {
-         currentX = x_int;
-         currentY = y_int;
-         currentZ = z_int;
-         
-         userTurn = 0;
-         meshTurn = 1;
-      }
-
-      if (meshTurn) {
-         printf("mesh move\n");
-         meshTurn = 0;
-      }
-
       
+      getOldViewPosition(&x, &y, &z);
       if (world[(int)x * -1][((int)y * -1) - 1][(int)z * -1] == 5) { // stair to go up
 
          if (currentLevel != 1) {
             for (int i = 0; i < 9; i++) { // leveing current level / hide all the mesh obj
-               //printf("Hiding obj id: %d\n\n", currentObj[i].id);
-               hideMesh(currentObj[i].id);
+               //printf("Hiding obj id: %d\n\n", currentMonsterObj[i].id);
+               hideMesh(currentMonsterObj[i].id);
             }
          }
 
          saveLevel(&head, currentLevel); // save the current level
          currentLevel -= 1;
+         isKeyFoundCurrentLevel = 1;
          loadLevel(&head, currentLevel); // get the next level
 
          if (currentLevel != 1) {
             for (int i = 0; i < 9; i++) { // leveing current level / hide all the mesh obj
-               //printf("showing obj id: %d\n", currentObj[i].id);
-               drawMesh(currentObj[i].id);
+               //printf("showing obj id: %d %d\n", currentMonsterObj[i].id, currentMonsterObj[i].isAlive);
+               if (currentMonsterObj[i].isAlive == 0) {
+                  //printf("here\n");
+                  hideMesh(currentMonsterObj[i].id);
+               } else {
+                  drawMesh(currentMonsterObj[i].id);
+               }
             }
          }
       }
 
       if (world[(int)x * -1][((int)y * -1) - 1][(int)z * -1] == 9) { // stair to go down
-         if (currentLevel != 1) {
-            for (int i = 0; i < 9; i++) { // leveing current level / hide all the mesh obj
-               //printf("Hiding obj id: %d\n\n", currentObj[i].id);
-               hideMesh(currentObj[i].id);
+         if (currentLevel != 1 && isKeyFoundCurrentLevel != 1) {
+
+         } else {
+            if (currentLevel != 1) {
+               for (int i = 0; i < 9; i++) { // leveing current level / hide all the mesh obj
+                  //printf("Hiding obj id: %d\n\n", currentMonsterObj[i].id);
+                  hideMesh(currentMonsterObj[i].id);
+               }
             }
-         }
-         saveLevel(&head, currentLevel); // save the current level
-         currentLevel += 1;
-         loadLevel(&head, currentLevel); // get the next level
-         if (currentLevel != 1) {
-            for (int i = 0; i < 9; i++) { // leveing current level / hide all the mesh obj
-               //printf("showing obj id: %d\n", currentObj[i].id);
-               drawMesh(currentObj[i].id);
-            }
+            saveLevel(&head, currentLevel); // save the current level
+            currentLevel += 1;
+            isKeyFoundCurrentLevel = 0;
+            loadLevel(&head, currentLevel); // get the next level
+            if (currentLevel != 1) {
+               for (int i = 0; i < 9; i++) { // leveing current level / hide all the mesh obj
+                  //printf("showing obj id: %d %d\n", currentMonsterObj[i].id, currentMonsterObj[i].isAlive);
+                  if (currentMonsterObj[i].isAlive == 0) {
+                     //printf("here\n");
+                     hideMesh(currentMonsterObj[i].id);
+                  } else {
+                     drawMesh(currentMonsterObj[i].id);
+                  }
+               }
+            }         
          }
       }
    }
@@ -709,20 +726,63 @@ createTube(2, -xx, -yy, -zz, -xx-((x-xx)*25.0), -yy-((y-yy)*25.0), -zz-((z-zz)*2
 	/* -x,y are the screen coordinates when the mouse is pressed or */
 	/*  released */ 
 void mouse(int button, int state, int x, int y) {
+   int withInRangeMonster = -1;
+   int withInRangeItem = -1;
+   int monsterId = -1;
+   int itemId = -1;
+   for (int i = 0; i < 9; i++) {
+      int upperXrangeMonster = currentMonsterObj[i].x + 1;
+      int lowerXrangeMonster = currentMonsterObj[i].x - 1;
+      int upperZrangeMonster = currentMonsterObj[i].z + 1;
+      int lowerZrangeMonster = currentMonsterObj[i].z - 1;
 
-   if (button == GLUT_LEFT_BUTTON)
-      printf("left button - ");
-   else if (button == GLUT_MIDDLE_BUTTON)
-      printf("middle button - ");
-   else
-      printf("right button - ");
+      int upperXrangeItem = currentItemObj[i].x + 1;
+      int lowerXrangeItem = currentItemObj[i].x - 1;
+      int upperZrangeItem = currentItemObj[i].z + 1;
+      int lowerZrangeItem = currentItemObj[i].z - 1;
 
-   if (state == GLUT_UP)
-      printf("up - ");
-   else
-      printf("down - ");
+      float x, y, z;
+      int x_int, y_int, z_int;
+      getOldViewPosition(&x, &y, &z);
+      x_int = (int)x * -1;
+      y_int = (int)y * -1;
+      z_int = (int)z * -1;
 
-   printf("%d %d\n", x, y);
+      if ((lowerXrangeMonster <= x_int && x_int <= upperXrangeMonster) && (lowerZrangeMonster <= z_int && z_int <= upperZrangeMonster) && currentMonsterObj[i].isAlive == 1) {
+
+		   //printf("%d, %d, %d, %d, %d. %d", upperXrange, lowerXrange,upperZrange, lowerZrange, x_int, z_int);
+         withInRangeMonster = 1;
+         monsterId = i;
+	   } 
+      
+      if ((lowerXrangeItem <= x_int && x_int <= upperXrangeItem) && (lowerZrangeItem <= z_int && z_int <= upperZrangeItem) && currentItemObj[i].isAlive == 1) {
+         withInRangeItem = 1;
+         itemId = i;
+      }
+   }
+
+   if (userTurn == 1 && state == GLUT_UP) {
+      userTurn = 0;
+      meshTurn = 1;
+      if (withInRangeMonster == 1) {
+         srand(time(NULL));
+         int result = rand() % 2;
+         if (result == 0) {
+            printf("Player attack        Status: Missed\n");
+         } else if (result == 1) {
+            printf("Player attack        Status: Hit\n");
+            hideMesh(currentMonsterObj[monsterId].id);
+            currentMonsterObj[monsterId].isAlive = 0;
+         }
+      }
+      
+      if (withInRangeItem == 1) {
+         printf("Pick Up item\n");
+         hideMesh(currentItemObj[itemId].id);
+         currentItemObj[itemId].isAlive = 0;
+         isKeyFoundCurrentLevel = 1;
+      }
+   }
 }
 
 int main(int argc, char** argv) {
@@ -925,10 +985,7 @@ void loadLevel(struct Node** head, int level) {
       }
 
       for (int i = 0; i < 9; i++) {
-         currentObj[i] = targetNode->allMeshObjs[i];
-      }
-
-      for (int i = 0; i < 9; i++) {
+         currentMonsterObj[i] = targetNode->allMeshMonster[i];
          roomLocation[0][i] = targetNode->roomLocation[0][i];
          roomLocation[1][i] = targetNode->roomLocation[1][i];
          roomLocation[2][i] = targetNode->roomLocation[2][i];
@@ -936,6 +993,11 @@ void loadLevel(struct Node** head, int level) {
          roomLocation[4][i] = targetNode->roomLocation[4][i];
       }
 
+      for (int i = 0; i < 5; i++) {
+         currentItemObj[i] = targetNode->allMeshItems[i];
+      }
+
+      isKeyFoundCurrentLevel = targetNode->isKeyFound;
       setViewPosition((int)targetNode->spawnXInedx * -1, (int)targetNode->spawnYIndex * -1-0.2, (int)targetNode->spawnZIndex * -1);
    } else {
       printf("Build world...\n\n");
@@ -977,22 +1039,32 @@ void appendLinkedList(struct Node **headReference, int level, GLubyte toBeSaved[
    newNode->spawnXInedx = spawnLocation[0];
    newNode->spawnYIndex = spawnLocation[1];
    newNode->spawnZIndex = spawnLocation[2];
+   newNode->isKeyFound = isKeyFoundCurrentLevel;
 
    for (int i = 0; i < 9; i++) {
-      newNode->allMeshObjs[i].id = currentObj[i].id; 
-      newNode->allMeshObjs[i].item = currentObj[i].item;
-      newNode->allMeshObjs[i].visability = currentObj[i].visability;
-      newNode->allMeshObjs[i].x = currentObj[i].x;
-      newNode->allMeshObjs[i].y = currentObj[i].y;
-      newNode->allMeshObjs[i].z = currentObj[i].z;
-   }
+      newNode->allMeshMonster[i].id = currentMonsterObj[i].id; 
+      newNode->allMeshMonster[i].item = currentMonsterObj[i].item;
+      newNode->allMeshMonster[i].visability = currentMonsterObj[i].visability;
+      newNode->allMeshMonster[i].x = currentMonsterObj[i].x;
+      newNode->allMeshMonster[i].y = currentMonsterObj[i].y;
+      newNode->allMeshMonster[i].z = currentMonsterObj[i].z;
+      newNode->allMeshMonster[i].isAlive = currentMonsterObj[i].isAlive;
 
-   for (int i = 0; i < 9; i++) {
       newNode->roomLocation[0][i] = roomLocation[0][i];
       newNode->roomLocation[1][i] = roomLocation[1][i];
       newNode->roomLocation[2][i] = roomLocation[2][i];
       newNode->roomLocation[3][i] = roomLocation[3][i];
       newNode->roomLocation[4][i] = roomLocation[4][i];
+   }
+
+   for (int i = 0; i < 5; i++) {
+      newNode->allMeshItems[i].id = currentItemObj[i].id; 
+      newNode->allMeshItems[i].item = currentItemObj[i].item;
+      newNode->allMeshItems[i].visability = currentItemObj[i].visability;
+      newNode->allMeshItems[i].x = currentItemObj[i].x;
+      newNode->allMeshItems[i].y = currentItemObj[i].y;
+      newNode->allMeshItems[i].z = currentItemObj[i].z;
+      newNode->allMeshItems[i].isAlive = currentItemObj[i].isAlive;     
    }
 
    for (int i = 0; i < WORLDX; i++) {
@@ -1096,9 +1168,5 @@ int pointInFrustum(float x, float y, float z) {
          return 1;
       }
    }
-
-   
-
-
    return 0;
 }
